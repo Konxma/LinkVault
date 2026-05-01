@@ -80,7 +80,7 @@ public class LinkRepository {
     return false;
   }
 
-  // Зверни увагу: тут ми передаємо Connection як параметр, щоб не брати нове з пулу всередині транзакції
+  //  Connection як параметр
   private void saveTagsForLink(Connection conn, int linkId, String tagsString) {
     if (tagsString == null || tagsString.trim().isEmpty()) return;
 

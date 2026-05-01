@@ -10,10 +10,9 @@ import java.util.concurrent.BlockingQueue;
 
 public class DatabaseConnection {
 
-  // Налаштування бази даних (поки працюємо локально)
   private static final String URL = "jdbc:postgresql://localhost:5432/linkvault_db";
-  private static final String USER = "postgres";
-  private static final String PASSWORD = "postgres"; // ВПИШИ СВІЙ ПАРОЛЬ!
+  private static final String USER = "linkvault_admin";
+  private static final String PASSWORD = "PLMQAZ109a";
 
   private static final int POOL_SIZE = 10;
   private static DatabaseConnection instance;
