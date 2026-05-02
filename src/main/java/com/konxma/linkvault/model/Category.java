@@ -1,9 +1,5 @@
 package com.konxma.linkvault.model;
 
-/**
- * Сутність категорії (папки) для групування закладок.
- * Відображає запис із таблиці categories у базі даних.
- */
 public class Category {
 
   private int categoryId;
@@ -11,14 +7,11 @@ public class Category {
   private String name;
   private String description;
 
-  /**
-   * Конструктор для створення об'єкта категорії.
-   *
-   * @param categoryId унікальний ідентифікатор категорії.
-   * @param userId ідентифікатор власника (користувача).
-   * @param name назва папки.
-   * @param description опис папки.
-   */
+  // Порожній конструктор (обов'язковий для створення об'єкта перед його наповненням)
+  public Category() {
+  }
+
+  // Конструктор з усіма аргументами (який у тебе був спочатку)
   public Category(int categoryId, int userId, String name, String description) {
     this.categoryId = categoryId;
     this.userId = userId;
@@ -26,37 +19,48 @@ public class Category {
     this.description = description;
   }
 
-  /** @return ідентифікатор категорії */
-  public int getCategoryId() { return categoryId; }
+  // --- Геттери та сеттери ---
 
-  /** @param categoryId новий ідентифікатор категорії */
-  public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+  public int getCategoryId() {
+    return categoryId;
+  }
 
-  /** @return ідентифікатор власника */
-  public int getUserId() { return userId; }
+  public void setCategoryId(int categoryId) {
+    this.categoryId = categoryId;
+  }
 
-  /** @param userId новий ідентифікатор власника */
-  public void setUserId(int userId) { this.userId = userId; }
+  public int getUserId() {
+    return userId;
+  }
 
-  /** @return назва категорії */
-  public String getName() { return name; }
+  public void setUserId(int userId) {
+    this.userId = userId;
+  }
 
-  /** @param name нова назва категорії */
-  public void setName(String name) { this.name = name; }
+  public String getName() {
+    return name;
+  }
 
-  /** @return опис категорії */
-  public String getDescription() { return description; }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-  /** @param description новий опис категорії */
-  public void setDescription(String description) { this.description = description; }
+  public String getDescription() {
+    return description;
+  }
 
-  /**
-   * Перевизначений метод для коректного відображення назви категорії у графічному інтерфейсі (ListView).
-   *
-   * @return назва категорії як рядок.
-   */
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  // Перевизначений метод toString для зручного виводу в консоль або логи
   @Override
   public String toString() {
-    return name;
+    return "Category{" +
+        "categoryId=" + categoryId +
+        ", userId=" + userId +
+        ", name='" + name + '\'' +
+        ", description='" + description + '\'' +
+        '}';
   }
 }
