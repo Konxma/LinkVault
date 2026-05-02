@@ -16,6 +16,8 @@
       <HBox alignment="CENTER_LEFT" spacing="10">
         <Label fx:id="currentCategoryLabel" style="-fx-font-weight: bold; -fx-font-size: 20px;" text="Оберіть папку зліва" />
         <Region HBox.hgrow="ALWAYS" />
+        <!-- Нове поле для пошуку -->
+        <TextField fx:id="searchField" promptText="Пошук посилань..." prefWidth="200" />
         <Button onAction="#handleAddLink" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;" text="+ Додати посилання" />
         <Button onAction="#handleDeleteLink" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Видалити" />
       </HBox>

@@ -1,23 +1,38 @@
 package com.konxma.linkvault.service;
 
+import com.konxma.linkvault.dto.UserDTO;
 import com.konxma.linkvault.model.User;
 import com.konxma.linkvault.repository.UserRepository;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * Шар бізнес-логіки для роботи з даними користувачів.
+ * Відповідає за валідацію, безпечне хешування паролів та аутентифікацію.
+ */
 public class UserService {
 
-  // Застосування принципу Dependency Injection (DI) - передаємо залежність через конструктор
   private final UserRepository userRepository;
 
+  /**
+   * Конструктор сервісу, що реалізує патерн Dependency Injection (DI).
+   *
+   * @param userRepository об'єкт доступу до даних користувачів.
+   */
   public UserService(UserRepository userRepository) {
     this.userRepository = userRepository;
   }
 
-  // Функція реєстрації з валідацією
+  /**
+   * Реєструє нового користувача в системі після валідації вхідних даних.
+   *
+   * @param username ім'я користувача.
+   * @param email електронна адреса.
+   * @param password пароль у відкритому вигляді.
+   * @return true, якщо реєстрація успішна, інакше false.
+   */
   public boolean registerUser(String username, String email, String password) {
-    // Валідація бізнес-логіки: перевірка на порожні поля та формат email
     if (username == null || username.trim().isEmpty() ||
         email == null || !email.contains("@") ||
         password == null || password.length() < 3) {
@@ -25,36 +40,40 @@ public class UserService {
       return false;
     }
 
-    // Перевірка, чи не зайнятий вже такий email
     if (userRepository.getUserByEmail(email) != null) {
       System.out.println("Користувач з таким email вже існує.");
       return false;
     }
 
-    // Хешуємо пароль перед збереженням
     String hashedPassword = hashPassword(password);
-
-    // Створюємо нового користувача (userId = 0, бо БД сама згенерує ID через SERIAL)
     User newUser = new User(0, username, email, hashedPassword);
-
     return userRepository.createUser(newUser);
   }
 
-  // Функція аутентифікації (входу)
-  public User authenticateUser(String email, String password) {
+  /**
+   * Перевіряє облікові дані та авторизує користувача.
+   *
+   * @param email електронна адреса.
+   * @param password введений пароль.
+   * @return об'єкт UserDTO для безпечної передачі даних в UI, або null у разі помилки.
+   */
+  public UserDTO authenticateUser(String email, String password) {
     User user = userRepository.getUserByEmail(email);
-
     if (user != null) {
-      // Хешуємо введений пароль і порівнюємо з тим, що в базі
       String hashedInputPassword = hashPassword(password);
       if (user.getPasswordHash().equals(hashedInputPassword)) {
-        return user; // Паролі співпали, повертаємо об'єкт користувача
+        return new UserDTO(user.getUserId(), user.getUsername(), user.getEmail());
       }
     }
-    return null; // Невірний email або пароль
+    return null;
   }
 
-  // Допоміжний метод для безпечного хешування паролів (SHA-256)
+  /**
+   * Виконує криптографічне хешування рядка за алгоритмом SHA-256.
+   *
+   * @param password пароль для хешування.
+   * @return рядок у форматі HEX, що містить хеш пароля.
+   */
   private String hashPassword(String password) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");

@@ -1,9 +1,14 @@
 package com.konxma.linkvault.ui;
 
+import com.konxma.linkvault.dto.UserDTO;
 import com.konxma.linkvault.model.Category;
 import com.konxma.linkvault.model.Link;
-import com.konxma.linkvault.model.User;
 import com.konxma.linkvault.repository.LinkRepository;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -11,9 +16,14 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.util.Pair;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
+/**
+ * Контролер головного вікна програми.
+ * Управління відображенням категорій, таблицею посилань та реактивним пошуком.
+ * Всі звернення до бази даних виконуються асинхронно для збереження плавності інтерфейсу.
+ */
 public class MainController {
 
   @FXML private ListView<Category> categoryListView;
@@ -21,41 +31,78 @@ public class MainController {
   @FXML private TableColumn<Link, String> titleColumn;
   @FXML private TableColumn<Link, String> urlColumn;
   @FXML private TableColumn<Link, String> tagsColumn;
-
   @FXML private Label currentCategoryLabel;
+  @FXML private TextField searchField;
 
-  private User currentUser;
+  private UserDTO currentUser;
   private LinkRepository linkRepository;
 
-  public void initData(User user) {
+  public void initData(UserDTO user) {
     this.currentUser = user;
     this.linkRepository = new LinkRepository();
 
-    // Зв'язуємо колонки таблиці з полями об'єкта Link
     titleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
     urlColumn.setCellValueFactory(new PropertyValueFactory<>("url"));
     tagsColumn.setCellValueFactory(new PropertyValueFactory<>("tagsAsString"));
 
     categoryListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
       if (newValue != null) {
-        currentCategoryLabel.setText("Папка: " + newValue.getName());
-        loadLinksForCategory(newValue.getCategoryId());
+        currentCategoryLabel.setText("Папка: " + newValue.getName() + " (Завантаження...)");
+        loadLinksForCategoryAsync(newValue.getCategoryId(), newValue.getName());
       }
     });
 
-    loadCategories();
+    loadCategoriesAsync();
   }
 
-  private void loadCategories() {
-    categoryListView.getItems().clear();
-    List<Category> categories = linkRepository.getCategoriesByUserId(currentUser.getUserId());
-    categoryListView.getItems().addAll(categories);
+  private void loadCategoriesAsync() {
+    CompletableFuture.supplyAsync(() -> linkRepository.getCategoriesByUserId(currentUser.getUserId()))
+        .thenAccept(categories -> {
+          Platform.runLater(() -> {
+            categoryListView.getItems().clear();
+            categoryListView.getItems().addAll(categories);
+          });
+        })
+        .exceptionally(ex -> {
+          Platform.runLater(() -> showAlert("Помилка", "Не вдалося завантажити категорії."));
+          return null;
+        });
   }
 
-  private void loadLinksForCategory(int categoryId) {
-    linksTable.getItems().clear();
-    List<Link> links = linkRepository.getLinksByCategoryId(categoryId);
-    linksTable.getItems().addAll(links);
+  private void loadLinksForCategoryAsync(int categoryId, String categoryName) {
+    CompletableFuture.supplyAsync(() -> linkRepository.getLinksByCategoryId(categoryId))
+        .thenAccept(links -> {
+          Platform.runLater(() -> {
+            currentCategoryLabel.setText("Папка: " + categoryName);
+            ObservableList<Link> masterData = FXCollections.observableArrayList(links);
+            FilteredList<Link> filteredData = new FilteredList<>(masterData, p -> true);
+
+            if (searchField != null) {
+              searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+                filteredData.setPredicate(link -> {
+                  if (newValue == null || newValue.isEmpty()) return true;
+                  String lowerCaseFilter = newValue.toLowerCase();
+                  if (link.getTitle().toLowerCase().contains(lowerCaseFilter)) return true;
+                  if (link.getUrl().toLowerCase().contains(lowerCaseFilter)) return true;
+                  if (link.getTagsAsString().toLowerCase().contains(lowerCaseFilter)) return true;
+                  return false;
+                });
+              });
+              searchField.setText("");
+            }
+
+            SortedList<Link> sortedData = new SortedList<>(filteredData);
+            sortedData.comparatorProperty().bind(linksTable.comparatorProperty());
+            linksTable.setItems(sortedData);
+          });
+        })
+        .exceptionally(ex -> {
+          Platform.runLater(() -> {
+            currentCategoryLabel.setText("Помилка завантаження");
+            showAlert("Помилка", "Не вдалося завантажити посилання.");
+          });
+          return null;
+        });
   }
 
   @FXML
@@ -69,11 +116,16 @@ public class MainController {
     result.ifPresent(name -> {
       if (!name.trim().isEmpty()) {
         Category newCategory = new Category(0, currentUser.getUserId(), name, "");
-        if (linkRepository.addCategory(newCategory)) {
-          loadCategories();
-        } else {
-          showAlert("Помилка", "Не вдалося створити папку.");
-        }
+        CompletableFuture.supplyAsync(() -> linkRepository.addCategory(newCategory))
+            .thenAccept(success -> {
+              Platform.runLater(() -> {
+                if (success) {
+                  loadCategoriesAsync();
+                } else {
+                  showAlert("Помилка", "Не вдалося створити папку.");
+                }
+              });
+            });
       }
     });
   }
@@ -102,7 +154,6 @@ public class MainController {
     titleField.setPromptText("Наприклад: Google");
     TextField urlField = new TextField();
     urlField.setPromptText("https://...");
-
     TextField tagsField = new TextField();
     tagsField.setPromptText("Java, Навчання, Важливе");
 
@@ -128,11 +179,16 @@ public class MainController {
       Link link = pair.getKey();
       String tagsString = pair.getValue();
 
-      if (linkRepository.addLinkWithTags(link, tagsString)) {
-        loadLinksForCategory(selectedCategory.getCategoryId());
-      } else {
-        showAlert("Помилка", "Не вдалося зберегти посилання.");
-      }
+      CompletableFuture.supplyAsync(() -> linkRepository.addLinkWithTags(link, tagsString))
+          .thenAccept(success -> {
+            Platform.runLater(() -> {
+              if (success) {
+                loadLinksForCategoryAsync(selectedCategory.getCategoryId(), selectedCategory.getName());
+              } else {
+                showAlert("Помилка", "Не вдалося зберегти посилання.");
+              }
+            });
+          });
     });
   }
 
@@ -151,11 +207,16 @@ public class MainController {
 
     Optional<ButtonType> result = alert.showAndWait();
     if (result.isPresent() && result.get() == ButtonType.OK) {
-      if (linkRepository.deleteLink(selectedLink.getLinkId())) {
-        linksTable.getItems().remove(selectedLink);
-      } else {
-        showAlert("Помилка", "Не вдалося видалити.");
-      }
+      CompletableFuture.supplyAsync(() -> linkRepository.deleteLink(selectedLink.getLinkId()))
+          .thenAccept(success -> {
+            Platform.runLater(() -> {
+              if (success) {
+                linksTable.getItems().remove(selectedLink);
+              } else {
+                showAlert("Помилка", "Не вдалося видалити.");
+              }
+            });
+          });
     }
   }
 

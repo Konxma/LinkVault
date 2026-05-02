@@ -9,7 +9,18 @@ import javafx.stage.Stage;
 
 import java.util.Objects;
 
+/**
+ * Головний клас програми, що ініціалізує JavaFX-додаток.
+ * Відповідає за запуск міграцій бази даних та відображення першого вікна (авторизації).
+ */
 public class Main extends Application {
+
+  /**
+   * Метод ініціалізації головного вікна програми.
+   *
+   * @param primaryStage головна сцена (вікно) додатку.
+   * @throws Exception якщо виникає помилка завантаження FXML-файлу.
+   */
   @Override
   public void start(Stage primaryStage) throws Exception {
     Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/view/LoginView.fxml")));
@@ -20,16 +31,19 @@ public class Main extends Application {
     primaryStage.show();
   }
 
+  /**
+   * Точка входу в програму. Виконує міграції бази даних перед запуском інтерфейсу.
+   *
+   * @param args аргументи командного рядка.
+   */
   public static void main(String[] args) {
-    // ЗАПУСКАЄМО МІГРАЦІЇ ПЕРЕД СТАРТОМ ПРОГРАМИ
     try {
       DatabaseConnection.migrateDatabase();
     } catch (Exception e) {
       System.err.println("Помилка при виконанні міграцій: " + e.getMessage());
       e.printStackTrace();
-      return; // Зупиняємо програму, якщо база даних не налаштувалася
+      return;
     }
-
     launch(args);
   }
 }

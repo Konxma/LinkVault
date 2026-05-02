@@ -8,17 +8,24 @@ import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * Клас для управління з'єднаннями з базою даних PostgreSQL.
+ * Реалізує патерн Singleton для створення єдиного пулу з'єднань
+ * та управління міграціями бази даних через інструмент Flyway.
+ */
 public class DatabaseConnection {
 
   private static final String URL = "jdbc:postgresql://localhost:5432/linkvault_db";
-  private static final String USER = "linkvault_admin";
-  private static final String PASSWORD = "PLMQAZ109a";
-
+  private static final String USER = "postgres";
+  private static final String PASSWORD = "postgres";
   private static final int POOL_SIZE = 10;
+
   private static DatabaseConnection instance;
   private final BlockingQueue<Connection> connectionPool;
 
-  // Приватний конструктор ініціалізує пул
+  /**
+   * Приватний конструктор, який ініціалізує пул з'єднань заданого розміру.
+   */
   private DatabaseConnection() {
     connectionPool = new ArrayBlockingQueue<>(POOL_SIZE);
     try {
@@ -31,7 +38,11 @@ public class DatabaseConnection {
     }
   }
 
-  // Отримання єдиного екземпляра (Singleton)
+  /**
+   * Повертає єдиний екземпляр класу DatabaseConnection.
+   *
+   * @return екземпляр DatabaseConnection.
+   */
   public static synchronized DatabaseConnection getInstance() {
     if (instance == null) {
       instance = new DatabaseConnection();
@@ -39,24 +50,32 @@ public class DatabaseConnection {
     return instance;
   }
 
-  // Взяття з'єднання з пулу
+  /**
+   * Отримує з'єднання з пулу. Якщо пул порожній, потік чекатиме.
+   *
+   * @return об'єкт Connection для роботи з базою даних.
+   */
   public Connection getConnection() {
     try {
-      return connectionPool.take(); // Потік чекатиме, якщо пул порожній
+      return connectionPool.take();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException("Помилка отримання з'єднання", e);
     }
   }
 
-  // Повернення з'єднання назад у пул
+  /**
+   * Повертає активне з'єднання назад у пул для повторного використання.
+   * Якщо з'єднання закрите, створюється нове.
+   *
+   * @param connection з'єднання, яке потрібно повернути.
+   */
   public void releaseConnection(Connection connection) {
     if (connection != null) {
       try {
         if (!connection.isClosed()) {
           connectionPool.offer(connection);
         } else {
-          // Якщо з'єднання "вмерло", створюємо нове на заміну
           connectionPool.offer(DriverManager.getConnection(URL, USER, PASSWORD));
         }
       } catch (SQLException e) {
@@ -65,7 +84,9 @@ public class DatabaseConnection {
     }
   }
 
-  // Метод для міграцій Flyway залишаємо без змін
+  /**
+   * Запускає міграції бази даних за допомогою Flyway перед стартом основної програми.
+   */
   public static void migrateDatabase() {
     System.out.println("Запуск міграцій Flyway...");
     Flyway flyway = Flyway.configure()
