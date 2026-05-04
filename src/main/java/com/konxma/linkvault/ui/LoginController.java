@@ -1,7 +1,7 @@
 package com.konxma.linkvault.ui;
 
 import com.konxma.linkvault.dto.UserDTO;
-import com.konxma.linkvault.repository.UserRepository;
+import com.konxma.linkvault.model.User;
 import com.konxma.linkvault.service.UserService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -29,10 +29,11 @@ public class LoginController {
   @FXML private Button loginButton;
   @FXML private Button registerButton;
 
-  private UserService userService;
+  private final UserService userService;
 
   public LoginController() {
-    this.userService = new UserService(new UserRepository());
+    // ВИПРАВЛЕНО: Новий UserService більше не потребує передачі репозиторію в конструктор
+    this.userService = new UserService();
   }
 
   /**
@@ -48,8 +49,8 @@ public class LoginController {
     errorLabel.setStyle("-fx-text-fill: gray;");
     errorLabel.setText("Перевірка даних...");
 
-    // Виконуємо запит до бази асинхронно
-    CompletableFuture.supplyAsync(() -> userService.authenticateUser(email, password))
+    // ВИПРАВЛЕНО: Використовуємо новий метод authenticate
+    CompletableFuture.supplyAsync(() -> userService.authenticate(email, password))
         .thenAccept(user -> {
           // Повертаємось у головний потік JavaFX для оновлення інтерфейсу
           Platform.runLater(() -> {
@@ -57,7 +58,10 @@ public class LoginController {
             if (user != null) {
               errorLabel.setStyle("-fx-text-fill: green;");
               errorLabel.setText("Успішний вхід!");
-              loadMainWindow(user);
+
+              // ВИПРАВЛЕНО: Перетворюємо отриману модель User на UserDTO для інтерфейсу
+              UserDTO userDTO = new UserDTO(user.getUserId(), user.getUsername(), user.getEmail());
+              loadMainWindow(userDTO);
             } else {
               errorLabel.setStyle("-fx-text-fill: red;");
               errorLabel.setText("Невірний email або пароль.");
@@ -110,7 +114,21 @@ public class LoginController {
     errorLabel.setStyle("-fx-text-fill: gray;");
     errorLabel.setText("Реєстрація...");
 
-    CompletableFuture.supplyAsync(() -> userService.registerUser(username, email, password))
+    // ВИПРАВЛЕНО: Створюємо об'єкт User і безпечно обробляємо реєстрацію через транзакцію
+    CompletableFuture.supplyAsync(() -> {
+          try {
+            User newUser = new User();
+            newUser.setUsername(username);
+            newUser.setEmail(email);
+            newUser.setPasswordHash(password);
+
+            userService.registerNewUser(newUser);
+            return true; // Якщо транзакція пройшла успішно
+          } catch (Exception e) {
+            e.printStackTrace();
+            return false; // Якщо база відхилила запис (наприклад, дубль email)
+          }
+        })
         .thenAccept(success -> {
           Platform.runLater(() -> {
             registerButton.setDisable(false);

@@ -1,24 +1,16 @@
 package com.konxma.linkvault.model;
 
-/**
- * Сутність користувача системи.
- * Відображає запис із таблиці users у базі даних.
- */
 public class User {
-
   private int userId;
   private String username;
   private String email;
   private String passwordHash;
 
-  /**
-   * Конструктор для створення об'єкта користувача.
-   *
-   * @param userId унікальний ідентифікатор.
-   * @param username ім'я користувача.
-   * @param email електронна адреса.
-   * @param passwordHash захешований пароль.
-   */
+  // Порожній конструктор (саме він вирішує помилку "Expected 4 arguments but found 0")
+  public User() {
+  }
+
+  // Конструктор з усіма аргументами
   public User(int userId, String username, String email, String passwordHash) {
     this.userId = userId;
     this.username = username;
@@ -26,27 +18,44 @@ public class User {
     this.passwordHash = passwordHash;
   }
 
-  /** @return унікальний ідентифікатор користувача */
-  public int getUserId() { return userId; }
+  public int getUserId() {
+    return userId;
+  }
 
-  /** @param userId новий ідентифікатор користувача */
-  public void setUserId(int userId) { this.userId = userId; }
+  public void setUserId(int userId) {
+    this.userId = userId;
+  }
 
-  /** @return ім'я користувача */
-  public String getUsername() { return username; }
+  public String getUsername() {
+    return username;
+  }
 
-  /** @param username нове ім'я користувача */
-  public void setUsername(String username) { this.username = username; }
+  public void setUsername(String username) {
+    this.username = username;
+  }
 
-  /** @return електронна адреса користувача */
-  public String getEmail() { return email; }
+  public String getEmail() {
+    return email;
+  }
 
-  /** @param email нова електронна адреса */
-  public void setEmail(String email) { this.email = email; }
+  public void setEmail(String email) {
+    this.email = email;
+  }
 
-  /** @return захешований пароль */
-  public String getPasswordHash() { return passwordHash; }
+  public String getPasswordHash() {
+    return passwordHash;
+  }
 
-  /** @param passwordHash новий хеш пароля */
-  public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+  public void setPasswordHash(String passwordHash) {
+    this.passwordHash = passwordHash;
+  }
+
+  @Override
+  public String toString() {
+    return "User{" +
+        "userId=" + userId +
+        ", username='" + username + '\'' +
+        ", email='" + email + '\'' +
+        '}';
+  }
 }
