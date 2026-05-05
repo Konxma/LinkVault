@@ -11,7 +11,7 @@ public class Category {
   public Category() {
   }
 
-  // Конструктор з усіма аргументами (який у тебе був спочатку)
+  // Конструктор з усіма аргументами
   public Category(int categoryId, int userId, String name, String description) {
     this.categoryId = categoryId;
     this.userId = userId;
@@ -53,14 +53,10 @@ public class Category {
     this.description = description;
   }
 
-  // Перевизначений метод toString для зручного виводу в консоль або логи
+
+  // Перевизначаємо метод toString, щоб у списку відображалася лише назва
   @Override
   public String toString() {
-    return "Category{" +
-        "categoryId=" + categoryId +
-        ", userId=" + userId +
-        ", name='" + name + '\'' +
-        ", description='" + description + '\'' +
-        '}';
+    return name;
   }
 }
