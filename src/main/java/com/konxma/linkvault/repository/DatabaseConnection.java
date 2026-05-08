@@ -15,10 +15,11 @@ import java.util.concurrent.BlockingQueue;
  */
 public class DatabaseConnection {
 
-  private static final String URL = "jdbc:postgresql://localhost:5432/linkvault_db";
-  private static final String USER = "postgres";
-  private static final String PASSWORD = "postgres";
+  private static final String URL = "jdbc:postgresql://ep-polished-truth-algzteeh-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require";
+  private static final String USER = "neondb_owner";
+  private static final String PASSWORD = "npg_VczKGi9tqE0L";
   private static final int POOL_SIZE = 10;
+
 
   private static DatabaseConnection instance;
   private final BlockingQueue<Connection> connectionPool;
