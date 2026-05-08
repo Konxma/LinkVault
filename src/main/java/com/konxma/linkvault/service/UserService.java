@@ -1,50 +1,59 @@
 package com.konxma.linkvault.service;
 
-import com.konxma.linkvault.model.Category;
 import com.konxma.linkvault.model.User;
+import com.konxma.linkvault.model.Category;
+import com.konxma.linkvault.repository.UserRepository;
 import com.konxma.linkvault.repository.CategoryRepository;
 import com.konxma.linkvault.repository.UnitOfWork;
-import com.konxma.linkvault.repository.UserRepository;
+import com.konxma.linkvault.infrastructure.PasswordHasher;
+import com.konxma.linkvault.infrastructure.EmailSender;
 
 public class UserService {
-
   private final UserRepository userRepository;
   private final CategoryRepository categoryRepository;
+  private final EmailSender emailSender;
 
   public UserService() {
     this.userRepository = new UserRepository();
     this.categoryRepository = new CategoryRepository();
+    this.emailSender = new EmailSender();
   }
 
-  public void registerNewUser(User user) throws Exception {
+  public void registerNewUser(User user, String rawPassword) throws Exception {
+    // Використовуємо правильний try-with-resources (вирішує жовте попередження)
     try (UnitOfWork uow = new UnitOfWork()) {
       try {
-        // Зберігаємо самого користувача
-        userRepository.save(user);
+        // 1. Хешуємо пароль ПЕРЕД збереженням
+        String hashedPassword = PasswordHasher.hashPassword(rawPassword);
+        user.setPasswordHash(hashedPassword);
 
-        // Одразу створюємо для нього базову категорію
+        // 2. Зберігаємо користувача
+        User savedUser = userRepository.save(user);
+
+        // 3. Створюємо базову категорію
         Category defaultCategory = new Category();
-        defaultCategory.setUserId(user.getUserId());
-        defaultCategory.setName("Мої перші закладки");
-        defaultCategory.setDescription("Створено автоматично");
+        defaultCategory.setUserId(savedUser.getUserId());
+        defaultCategory.setName("Загальна папка");
+        defaultCategory.setDescription("Мої перші посилання");
         categoryRepository.save(defaultCategory);
 
-        // Якщо обидві дії успішні, підтверджуємо транзакцію
+        // 4. Підтверджуємо транзакцію
         uow.commit();
-        System.out.println("Користувача та базову категорію успішно збережено!");
+
+        // 5. Відправляємо лист підтвердження
+        emailSender.sendConfirmationEmail(savedUser.getEmail(), savedUser.getUsername());
 
       } catch (Exception e) {
-        // Відкочуємо всі зміни у разі помилки
         uow.rollback();
-        System.out.println("Помилка під час реєстрації, всі зміни відхилено.");
         throw e;
       }
     }
   }
 
-  public User authenticate(String email, String passwordHash) {
+  public User authenticate(String email, String rawPassword) {
     User user = userRepository.findByEmail(email);
-    if (user != null && user.getPasswordHash().equals(passwordHash)) {
+    // Об'єднали if для чистоти коду (вирішує жовте попередження)
+    if (user != null && PasswordHasher.verifyPassword(rawPassword, user.getPasswordHash())) {
       return user;
     }
     return null;

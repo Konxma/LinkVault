@@ -20,6 +20,7 @@ class UserServiceIntegrationTest {
 
   @BeforeAll
   static void setupDatabase() throws Exception {
+    // Піднімаємо H2 в пам'яті для тестів
     h2Connection = DriverManager.getConnection("jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE", "sa", "");
     try (Statement stmt = h2Connection.createStatement()) {
       stmt.execute("CREATE TABLE users (user_id SERIAL PRIMARY KEY, username VARCHAR(50) NOT NULL, email VARCHAR(100) UNIQUE NOT NULL, password_hash TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
@@ -38,9 +39,10 @@ class UserServiceIntegrationTest {
   void setUp() throws Exception {
     // Створюємо "шпигуна" (spy) для нашого з'єднання
     Connection spyConnection = Mockito.spy(h2Connection);
-    // Забороняємо фізично закривати з'єднання під час тесту (ігноруємо виклик .close())
+    // Забороняємо фізично закривати з'єднання під час тесту (UnitOfWork спробує це зробити)
     Mockito.doNothing().when(spyConnection).close();
 
+    // Підміняємо пул з'єднань
     DatabaseConnection mockPool = Mockito.mock(DatabaseConnection.class);
     Mockito.when(mockPool.getConnection()).thenReturn(spyConnection);
     Mockito.doNothing().when(mockPool).releaseConnection(Mockito.any(Connection.class));
@@ -54,6 +56,7 @@ class UserServiceIntegrationTest {
   @AfterEach
   void tearDown() throws Exception {
     mockedDbConnection.close();
+    // Очищаємо таблиці після кожного тесту, щоб вони не впливали один на одного
     try (Statement stmt = h2Connection.createStatement()) {
       stmt.execute("TRUNCATE TABLE users");
       stmt.execute("TRUNCATE TABLE categories");
@@ -65,13 +68,33 @@ class UserServiceIntegrationTest {
     User newUser = new User();
     newUser.setUsername("integration_user");
     newUser.setEmail("int@test.com");
-    newUser.setPasswordHash("secure123");
 
-    assertDoesNotThrow(() -> userService.registerNewUser(newUser),
+    // 1. Перевіряємо, що реєстрація проходить без помилок
+    assertDoesNotThrow(() -> userService.registerNewUser(newUser, "secure123"),
         "Користувач та базова категорія повинні успішно зберегтися в БД");
 
+    // 2. Перевіряємо авторизацію з правильним паролем
     User loggedInUser = userService.authenticate("int@test.com", "secure123");
     assertNotNull(loggedInUser, "Авторизація повинна пройти успішно");
     assertEquals("integration_user", loggedInUser.getUsername());
+
+    // 3. Перевіряємо, що пароль у базі дійсно захешований
+    assertNotEquals("secure123", loggedInUser.getPasswordHash(), "Пароль у базі має бути захешований (не дорівнювати сирому тексту)!");
+  }
+
+  @Test
+  void authenticate_ShouldReturnNull_WhenPasswordIsWrong() {
+    User newUser = new User();
+    newUser.setUsername("wrong_pass_user");
+    newUser.setEmail("wrong@test.com");
+
+    // Реєструємо користувача
+    assertDoesNotThrow(() -> userService.registerNewUser(newUser, "correctPass"));
+
+    // Спроба входу з неправильним паролем
+    User loggedInUser = userService.authenticate("wrong@test.com", "invalidPass");
+
+    // Має повернутися null
+    assertNull(loggedInUser, "При введенні неправильного пароля авторизація має повертати null");
   }
 }

@@ -100,10 +100,6 @@ public class LinkRepository {
 
   /**
    * Прив'язує теги до збереженого посилання.
-   *
-   * @param conn поточне підключення до бази даних.
-   * @param linkId ідентифікатор збереженого посилання.
-   * @param tagsString рядок з тегами.
    */
   private void saveTagsForLink(Connection conn, int linkId, String tagsString) {
     if (tagsString == null || tagsString.trim().isEmpty()) return;
@@ -119,11 +115,7 @@ public class LinkRepository {
   }
 
   /**
-   * Отримує ідентифікатор існуючого тегу або створює новий, якщо він відсутній.
-   *
-   * @param conn поточне підключення.
-   * @param tagName назва тегу.
-   * @return ідентифікатор тегу або -1 у разі помилки.
+   * Отримує ідентифікатор існуючого тегу або створює новий.
    */
   private int getOrCreateTag(Connection conn, String tagName) {
     String selectSql = "SELECT tag_id FROM tags WHERE name = ?";
@@ -148,11 +140,7 @@ public class LinkRepository {
   }
 
   /**
-   * Створює запис у проміжній таблиці link_tags для зв'язку багато-до-багатьох.
-   *
-   * @param conn поточне підключення.
-   * @param linkId ідентифікатор посилання.
-   * @param tagId ідентифікатор тегу.
+   * Створює запис у проміжній таблиці link_tags.
    */
   private void linkTagToLink(Connection conn, int linkId, int tagId) {
     String sql = "INSERT INTO link_tags (link_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
@@ -167,9 +155,6 @@ public class LinkRepository {
 
   /**
    * Завантажує всі посилання, що належать до певної категорії.
-   *
-   * @param categoryId ідентифікатор категорії.
-   * @return список об'єктів Link із завантаженими тегами.
    */
   public List<Link> getLinksByCategoryId(int categoryId) {
     List<Link> links = new ArrayList<>();
@@ -198,10 +183,6 @@ public class LinkRepository {
 
   /**
    * Отримує список тегів, прив'язаних до конкретного посилання.
-   *
-   * @param conn поточне підключення.
-   * @param linkId ідентифікатор посилання.
-   * @return список об'єктів Tag.
    */
   private List<Tag> getTagsForLink(Connection conn, int linkId) {
     List<Tag> tags = new ArrayList<>();
@@ -221,10 +202,7 @@ public class LinkRepository {
   }
 
   /**
-   * Видаляє посилання з бази даних за його ідентифікатором.
-   *
-   * @param linkId ідентифікатор посилання для видалення.
-   * @return true у разі успішного видалення, інакше false.
+   * Видаляє посилання з бази даних.
    */
   public boolean deleteLink(int linkId) {
     String sql = "DELETE FROM links WHERE link_id = ?";
@@ -235,6 +213,28 @@ public class LinkRepository {
     } catch (SQLException e) {
       System.out.println("Помилка при видаленні посилання: " + e.getMessage());
       return false;
+    } finally {
+      pool.releaseConnection(conn);
+    }
+  }
+
+  // ==================== НОВИЙ МЕТОД ====================
+
+  /**
+   * Оновлює існуюче посилання в базі даних.
+   *
+   * @param link об'єкт посилання з оновленими даними (url, title, linkId)
+   */
+  public void updateLink(Link link) {
+    String sql = "UPDATE links SET url = ?, title = ? WHERE link_id = ?";
+    Connection conn = pool.getConnection();
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setString(1, link.getUrl());
+      pstmt.setString(2, link.getTitle());
+      pstmt.setInt(3, link.getLinkId());
+      pstmt.executeUpdate();
+    } catch (SQLException e) {
+      System.out.println("Помилка при оновленні посилання: " + e.getMessage());
     } finally {
       pool.releaseConnection(conn);
     }

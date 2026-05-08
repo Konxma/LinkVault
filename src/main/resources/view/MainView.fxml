@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane prefHeight="600" prefWidth="900" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.konxma.linkvault.ui.MainController">
+<BorderPane prefHeight="700" prefWidth="1100" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.konxma.linkvault.ui.MainController">
   <left>
     <VBox prefWidth="220" spacing="10" style="-fx-background-color: #f4f4f4; -fx-padding: 15; -fx-border-color: #ddd; -fx-border-width: 0 1 0 0;">
       <Label style="-fx-font-weight: bold; -fx-font-size: 16px;" text="Мої папки" />
@@ -16,11 +15,19 @@
       <HBox alignment="CENTER_LEFT" spacing="10">
         <Label fx:id="currentCategoryLabel" style="-fx-font-weight: bold; -fx-font-size: 20px;" text="Оберіть папку зліва" />
         <Region HBox.hgrow="ALWAYS" />
-        <!-- Нове поле для пошуку -->
-        <TextField fx:id="searchField" promptText="Пошук посилань..." prefWidth="200" />
-        <Button onAction="#handleAddLink" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;" text="+ Додати посилання" />
+
+        <TextField fx:id="searchField" prefWidth="180" promptText="Пошук посилань..." />
+        <Button onAction="#handleAddLink" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;" text="+ Додати" />
+        <Button onAction="#handleEditLink" style="-fx-background-color: #FFC107; -fx-text-fill: black; -fx-font-weight: bold;" text="Редагувати" />
         <Button onAction="#handleDeleteLink" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Видалити" />
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <Button onAction="#handleExportToExcel" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;" text="Експорт в Excel" />
+
+        <Button onAction="#handleLogout" style="-fx-background-color: transparent; -fx-text-fill: #f44336; -fx-border-color: #f44336; -fx-border-radius: 3;" text="Вийти" />
       </HBox>
+
       <TableView fx:id="linksTable" VBox.vgrow="ALWAYS">
         <columns>
           <TableColumn fx:id="titleColumn" prefWidth="200" text="Назва закладки" />

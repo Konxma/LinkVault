@@ -1,0 +1,2412 @@
+========================================================
+����: src\main\java\com\konxma\linkvault\dto\UserDTO.java
+========================================================
+package com.konxma.linkvault.dto;
+
+/**
+ * Data Transfer Object (DTO) для сутності користувача.
+ * Використовується для безпечної передачі даних між шарами програми,
+ * гарантуючи, що конфіденційна інформація (наприклад, хеш пароля) не потрапить у UI.
+ */
+public class UserDTO {
+  private int userId;
+  private String username;
+  private String email;
+
+  /**
+   * Конструктор для створення об'єкта передачі даних користувача.
+   *
+   * @param userId унікальний ідентифікатор користувача в базі даних.
+   * @param username ім'я користувача.
+   * @param email електронна пошта користувача.
+   */
+  public UserDTO(int userId, String username, String email) {
+    this.userId = userId;
+    this.username = username;
+    this.email = email;
+  }
+
+  /**
+   * Повертає ідентифікатор користувача.
+   *
+   * @return userId
+   */
+  public int getUserId() {
+    return userId;
+  }
+
+  /**
+   * Повертає ім'я користувача.
+   *
+   * @return username
+   */
+  public String getUsername() {
+    return username;
+  }
+
+  /**
+   * Повертає електронну пошту користувача.
+   *
+   * @return email
+   */
+  public String getEmail() {
+    return email;
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\infrastructure\EmailSender.java
+========================================================
+package com.konxma.linkvault.infrastructure;
+
+public class EmailSender {
+
+  public void sendConfirmationEmail(String toEmail, String username) {
+    // У реальному проєкті тут була б логіка JavaMailSender.
+    // Для демонстрації архітектури ми виводимо лог відправки в консоль.
+    System.out.println("\n================ EMAIL SERVICE ================");
+    System.out.println("Відправляємо лист на адресу: " + toEmail);
+    System.out.println("Тема: Підтвердження реєстрації у LinkVault");
+    System.out.println("Повідомлення: Вітаємо, " + username + "! Ваш акаунт успішно створено.");
+    System.out.println("===============================================\n");
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\infrastructure\PasswordHasher.java
+========================================================
+package com.konxma.linkvault.infrastructure;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
+
+public class PasswordHasher {
+
+  // Метод для перетворення звичайного пароля на нечитабельний хеш
+  public static String hashPassword(String rawPassword) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(rawPassword.getBytes());
+      return Base64.getEncoder().encodeToString(hash);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("Помилка хешування пароля", e);
+    }
+  }
+
+  // Метод для перевірки, чи збігається введений пароль із хешем у базі
+  public static boolean verifyPassword(String rawPassword, String hashedPassword) {
+    return hashPassword(rawPassword).equals(hashedPassword);
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\model\Category.java
+========================================================
+package com.konxma.linkvault.model;
+
+public class Category {
+  private int categoryId;
+  private int userId;
+  private String name;
+  private String description;
+
+  public Category() {}
+
+  public Category(int categoryId, int userId, String name, String description) {
+    this.categoryId = categoryId;
+    this.userId = userId;
+    this.name = name;
+    this.description = description;
+  }
+
+  // Геттери та сеттери
+  public int getCategoryId() { return categoryId; }
+  public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+  public int getUserId() { return userId; }
+  public void setUserId(int userId) { this.userId = userId; }
+  public String getName() { return name; }
+  public void setName(String name) { this.name = name; }
+  public String getDescription() { return description; }
+  public void setDescription(String description) { this.description = description; }
+
+  // ВИПРАВЛЕННЯ: Тепер JavaFX показуватиме лише ім'я у списку
+  @Override
+  public String toString() {
+    return name != null ? name : "Без назви";
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\model\Link.java
+========================================================
+package com.konxma.linkvault.model;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Сутність збереженого посилання (закладки).
+ * Відображає запис із таблиці links у базі даних та містить пов'язані теги.
+ */
+public class Link {
+
+  private int linkId;
+  private int categoryId;
+  private String url;
+  private String title;
+  private List<Tag> tags;
+
+  /**
+   * Конструктор для створення об'єкта посилання.
+   *
+   * @param linkId унікальний ідентифікатор посилання.
+   * @param categoryId ідентифікатор категорії, до якої належить посилання.
+   * @param url веб-адреса.
+   * @param title назва закладки.
+   */
+  public Link(int linkId, int categoryId, String url, String title) {
+    this.linkId = linkId;
+    this.categoryId = categoryId;
+    this.url = url;
+    this.title = title;
+    this.tags = new ArrayList<>();
+  }
+
+  /** @return ідентифікатор посилання */
+  public int getLinkId() { return linkId; }
+
+  /** @param linkId новий ідентифікатор посилання */
+  public void setLinkId(int linkId) { this.linkId = linkId; }
+
+  /** @return ідентифікатор категорії */
+  public int getCategoryId() { return categoryId; }
+
+  /** @param categoryId новий ідентифікатор категорії */
+  public void setCategoryId(int categoryId) { this.categoryId = categoryId; }
+
+  /** @return URL-адреса */
+  public String getUrl() { return url; }
+
+  /** @param url нова URL-адреса */
+  public void setUrl(String url) { this.url = url; }
+
+  /** @return назва закладки */
+  public String getTitle() { return title; }
+
+  /** @param title нова назва закладки */
+  public void setTitle(String title) { this.title = title; }
+
+  /** @return список тегів, прив'язаних до посилання */
+  public List<Tag> getTags() { return tags; }
+
+  /** @param tags новий список тегів */
+  public void setTags(List<Tag> tags) { this.tags = tags; }
+
+  /**
+   * Додає один тег до списку тегів цього посилання.
+   *
+   * @param tag об'єкт тегу для додавання.
+   */
+  public void addTag(Tag tag) {
+    this.tags.add(tag);
+  }
+
+  /**
+   * Конвертує список об'єктів тегів у єдиний рядок для відображення в таблиці інтерфейсу.
+   *
+   * @return рядок з назвами тегів, розділеними комою.
+   */
+  public String getTagsAsString() {
+    if (tags == null || tags.isEmpty()) return "";
+    List<String> tagNames = new ArrayList<>();
+    for (Tag tag : tags) {
+      tagNames.add(tag.getName());
+    }
+    return String.join(", ", tagNames);
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\model\Tag.java
+========================================================
+package com.konxma.linkvault.model;
+
+/**
+ * Сутність тегу для зручного пошуку та фільтрації посилань.
+ * Відображає запис із таблиці tags у базі даних.
+ */
+public class Tag {
+
+  private int tagId;
+  private String name;
+
+  /**
+   * Конструктор для створення об'єкта тегу.
+   *
+   * @param tagId унікальний ідентифікатор тегу.
+   * @param name назва тегу.
+   */
+  public Tag(int tagId, String name) {
+    this.tagId = tagId;
+    this.name = name;
+  }
+
+  /** @return ідентифікатор тегу */
+  public int getTagId() { return tagId; }
+
+  /** @param tagId новий ідентифікатор тегу */
+  public void setTagId(int tagId) { this.tagId = tagId; }
+
+  /** @return назва тегу */
+  public String getName() { return name; }
+
+  /** @param name нова назва тегу */
+  public void setName(String name) { this.name = name; }
+
+  /**
+   * Перевизначений метод для відображення тегу як тексту.
+   *
+   * @return назва тегу.
+   */
+  @Override
+  public String toString() {
+    return name;
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\model\User.java
+========================================================
+package com.konxma.linkvault.model;
+
+public class User {
+  private int userId;
+  private String username;
+  private String email;
+  private String passwordHash;
+
+  // Порожній конструктор (саме він вирішує помилку "Expected 4 arguments but found 0")
+  public User() {
+  }
+
+  // Конструктор з усіма аргументами
+  public User(int userId, String username, String email, String passwordHash) {
+    this.userId = userId;
+    this.username = username;
+    this.email = email;
+    this.passwordHash = passwordHash;
+  }
+
+  public int getUserId() {
+    return userId;
+  }
+
+  public void setUserId(int userId) {
+    this.userId = userId;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  public String getPasswordHash() {
+    return passwordHash;
+  }
+
+  public void setPasswordHash(String passwordHash) {
+    this.passwordHash = passwordHash;
+  }
+
+  @Override
+  public String toString() {
+    return "User{" +
+        "userId=" + userId +
+        ", username='" + username + '\'' +
+        ", email='" + email + '\'' +
+        '}';
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\repository\CategoryRepository.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import com.konxma.linkvault.model.Category;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CategoryRepository {
+
+  // Створення (Create)
+  public void save(Category category) {
+    String sql = "INSERT INTO categories (user_id, name, description) VALUES (?, ?, ?)";
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, category.getUserId());
+      pstmt.setString(2, category.getName());
+      pstmt.setString(3, category.getDescription());
+      pstmt.executeUpdate();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  // Читання (Read)
+  public List<Category> findByUserId(int userId) {
+    List<Category> categories = new ArrayList<>();
+    String sql = "SELECT * FROM categories WHERE user_id = ?";
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, userId);
+      ResultSet rs = pstmt.executeQuery();
+      while (rs.next()) {
+        categories.add(new Category(
+            rs.getInt("category_id"),
+            rs.getInt("user_id"),
+            rs.getString("name"),
+            rs.getString("description")
+        ));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return categories;
+  }
+
+  // Оновлення (Update)
+  public void update(Category category) {
+    String sql = "UPDATE categories SET name = ?, description = ? WHERE category_id = ?";
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setString(1, category.getName());
+      pstmt.setString(2, category.getDescription());
+      pstmt.setInt(3, category.getCategoryId());
+      pstmt.executeUpdate();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  // Видалення (Delete)
+  public void delete(int id) {
+    String sql = "DELETE FROM categories WHERE category_id = ?";
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, id);
+      pstmt.executeUpdate();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\repository\DatabaseConnection.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import org.flywaydb.core.Flyway;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
+/**
+ * Клас для управління з'єднаннями з базою даних PostgreSQL.
+ * Реалізує патерн Singleton для створення єдиного пулу з'єднань
+ * та управління міграціями бази даних через інструмент Flyway.
+ */
+public class DatabaseConnection {
+
+  private static final String URL = "jdbc:postgresql://localhost:5432/linkvault_db";
+  private static final String USER = "postgres";
+  private static final String PASSWORD = "postgres";
+  private static final int POOL_SIZE = 10;
+
+  private static DatabaseConnection instance;
+  private final BlockingQueue<Connection> connectionPool;
+
+  /**
+   * Приватний конструктор, який ініціалізує пул з'єднань заданого розміру.
+   */
+  private DatabaseConnection() {
+    connectionPool = new ArrayBlockingQueue<>(POOL_SIZE);
+    try {
+      for (int i = 0; i < POOL_SIZE; i++) {
+        connectionPool.add(DriverManager.getConnection(URL, USER, PASSWORD));
+      }
+      System.out.println("Пул з'єднань (" + POOL_SIZE + " шт.) успішно створено!");
+    } catch (SQLException e) {
+      throw new RuntimeException("Помилка створення пулу з'єднань", e);
+    }
+  }
+
+  /**
+   * Повертає єдиний екземпляр класу DatabaseConnection.
+   *
+   * @return екземпляр DatabaseConnection.
+   */
+  public static synchronized DatabaseConnection getInstance() {
+    if (instance == null) {
+      instance = new DatabaseConnection();
+    }
+    return instance;
+  }
+
+  /**
+   * Отримує з'єднання з пулу. Якщо пул порожній, потік чекатиме.
+   *
+   * @return об'єкт Connection для роботи з базою даних.
+   */
+  public Connection getConnection() {
+    try {
+      return connectionPool.take();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Помилка отримання з'єднання", e);
+    }
+  }
+
+  /**
+   * Повертає активне з'єднання назад у пул для повторного використання.
+   * Якщо з'єднання закрите, створюється нове.
+   *
+   * @param connection з'єднання, яке потрібно повернути.
+   */
+  public void releaseConnection(Connection connection) {
+    if (connection != null) {
+      try {
+        if (!connection.isClosed()) {
+          connectionPool.offer(connection);
+        } else {
+          connectionPool.offer(DriverManager.getConnection(URL, USER, PASSWORD));
+        }
+      } catch (SQLException e) {
+        System.out.println("Помилка повернення з'єднання: " + e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Запускає міграції бази даних за допомогою Flyway перед стартом основної програми.
+   */
+  public static void migrateDatabase() {
+    System.out.println("Запуск міграцій Flyway...");
+    Flyway flyway = Flyway.configure()
+        .dataSource(URL, USER, PASSWORD)
+        .load();
+    flyway.migrate();
+    System.out.println("Міграції успішно завершені!");
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\repository\EntityMapper.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import java.lang.reflect.Field;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+
+public class EntityMapper<T> {
+
+  private final Class<T> clazz;
+
+  public EntityMapper(Class<T> clazz) {
+    this.clazz = clazz;
+  }
+
+  public List<T> mapResultSetToList(ResultSet rs) throws Exception {
+    List<T> resultList = new ArrayList<>();
+
+    while (rs.next()) {
+      // Створюємо новий пустий об'єкт потрібного класу
+      T entity = clazz.getDeclaredConstructor().newInstance();
+
+      // Проходимося по всіх полях цього класу
+      for (Field field : clazz.getDeclaredFields()) {
+        field.setAccessible(true); // Дозволяємо запис у приватні поля
+        String columnName = getColumnName(field);
+
+        try {
+          Object value = rs.getObject(columnName);
+          if (value != null) {
+            field.set(entity, value);
+          }
+        } catch (Exception e) {
+          // Якщо такої колонки немає в ResultSet, просто йдемо далі
+        }
+      }
+      resultList.add(entity);
+    }
+    return resultList;
+  }
+
+  private String getColumnName(Field field) {
+    // Автоматично конвертуємо camelCase у snake_case (наприклад userId -> user_id)
+    String regex = "([a-z])([A-Z]+)";
+    String replacement = "$1_$2";
+    return field.getName().replaceAll(regex, replacement).toLowerCase();
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\repository\IdentityMap.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class IdentityMap<T> {
+  // Кеш, де ключ - це ID запису, а значення - сам об'єкт
+  private final Map<Integer, T> cache = new HashMap<>();
+
+  public void put(Integer id, T entity) {
+    cache.put(id, entity);
+  }
+
+  public T get(Integer id) {
+    return cache.get(id);
+  }
+
+  public void remove(Integer id) {
+    cache.remove(id);
+  }
+
+  public void clear() {
+    cache.clear();
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\repository\LinkRepository.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import com.konxma.linkvault.model.Category;
+import com.konxma.linkvault.model.Link;
+import com.konxma.linkvault.model.Tag;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Репозиторій для роботи з даними посилань, категорій та тегів.
+ * Відповідає за виконання SQL-запитів до бази даних PostgreSQL.
+ */
+public class LinkRepository {
+
+  private final DatabaseConnection pool = DatabaseConnection.getInstance();
+
+  /**
+   * Додає нову категорію до бази даних.
+   *
+   * @param category об'єкт категорії для збереження.
+   * @return true у разі успішного збереження, інакше false.
+   */
+  public boolean addCategory(Category category) {
+    String sql = "INSERT INTO categories (user_id, name, description) VALUES (?, ?, ?)";
+    Connection conn = pool.getConnection();
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, category.getUserId());
+      pstmt.setString(2, category.getName());
+      pstmt.setString(3, category.getDescription());
+      return pstmt.executeUpdate() > 0;
+    } catch (SQLException e) {
+      System.out.println("Помилка при збереженні категорії: " + e.getMessage());
+      return false;
+    } finally {
+      pool.releaseConnection(conn);
+    }
+  }
+
+  /**
+   * Отримує список усіх категорій, що належать конкретному користувачу.
+   *
+   * @param userId ідентифікатор користувача.
+   * @return список об'єктів Category.
+   */
+  public List<Category> getCategoriesByUserId(int userId) {
+    List<Category> categories = new ArrayList<>();
+    String sql = "SELECT * FROM categories WHERE user_id = ?";
+    Connection conn = pool.getConnection();
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, userId);
+      ResultSet rs = pstmt.executeQuery();
+      while (rs.next()) {
+        categories.add(new Category(
+            rs.getInt("category_id"),
+            rs.getInt("user_id"),
+            rs.getString("name"),
+            rs.getString("description")
+        ));
+      }
+    } catch (SQLException e) {
+      System.out.println("Помилка при завантаженні категорій: " + e.getMessage());
+    } finally {
+      pool.releaseConnection(conn);
+    }
+    return categories;
+  }
+
+  /**
+   * Зберігає нове посилання та автоматично прив'язує до нього вказані теги.
+   *
+   * @param link об'єкт посилання.
+   * @param tagsString рядок з тегами, розділеними комою.
+   * @return true у разі успішного збереження, інакше false.
+   */
+  public boolean addLinkWithTags(Link link, String tagsString) {
+    String insertLinkSql = "INSERT INTO links (category_id, url, title) VALUES (?, ?, ?)";
+    Connection conn = pool.getConnection();
+    try (PreparedStatement pstmt = conn.prepareStatement(insertLinkSql, Statement.RETURN_GENERATED_KEYS)) {
+      pstmt.setInt(1, link.getCategoryId());
+      pstmt.setString(2, link.getUrl());
+      pstmt.setString(3, link.getTitle());
+      if (pstmt.executeUpdate() > 0) {
+        try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+          if (generatedKeys.next()) {
+            int newLinkId = generatedKeys.getInt(1);
+            saveTagsForLink(conn, newLinkId, tagsString);
+            return true;
+          }
+        }
+      }
+    } catch (SQLException e) {
+      System.out.println("Помилка при збереженні посилання: " + e.getMessage());
+    } finally {
+      pool.releaseConnection(conn);
+    }
+    return false;
+  }
+
+  /**
+   * Прив'язує теги до збереженого посилання.
+   */
+  private void saveTagsForLink(Connection conn, int linkId, String tagsString) {
+    if (tagsString == null || tagsString.trim().isEmpty()) return;
+    String[] tagNames = tagsString.split(",");
+    for (String tagName : tagNames) {
+      tagName = tagName.trim();
+      if (tagName.isEmpty()) continue;
+      int tagId = getOrCreateTag(conn, tagName);
+      if (tagId != -1) {
+        linkTagToLink(conn, linkId, tagId);
+      }
+    }
+  }
+
+  /**
+   * Отримує ідентифікатор існуючого тегу або створює новий.
+   */
+  private int getOrCreateTag(Connection conn, String tagName) {
+    String selectSql = "SELECT tag_id FROM tags WHERE name = ?";
+    try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+      pstmt.setString(1, tagName);
+      ResultSet rs = pstmt.executeQuery();
+      if (rs.next()) return rs.getInt("tag_id");
+    } catch (SQLException e) {
+      System.out.println("Помилка пошуку тегу: " + e.getMessage());
+    }
+
+    String insertSql = "INSERT INTO tags (name) VALUES (?)";
+    try (PreparedStatement pstmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+      pstmt.setString(1, tagName);
+      pstmt.executeUpdate();
+      ResultSet rs = pstmt.getGeneratedKeys();
+      if (rs.next()) return rs.getInt(1);
+    } catch (SQLException e) {
+      System.out.println("Помилка створення тегу: " + e.getMessage());
+    }
+    return -1;
+  }
+
+  /**
+   * Створює запис у проміжній таблиці link_tags.
+   */
+  private void linkTagToLink(Connection conn, int linkId, int tagId) {
+    String sql = "INSERT INTO link_tags (link_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, linkId);
+      pstmt.setInt(2, tagId);
+      pstmt.executeUpdate();
+    } catch (SQLException e) {
+      System.out.println("Помилка зв'язування тегу: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Завантажує всі посилання, що належать до певної категорії.
+   */
+  public List<Link> getLinksByCategoryId(int categoryId) {
+    List<Link> links = new ArrayList<>();
+    String sql = "SELECT * FROM links WHERE category_id = ?";
+    Connection conn = pool.getConnection();
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, categoryId);
+      ResultSet rs = pstmt.executeQuery();
+      while (rs.next()) {
+        Link link = new Link(
+            rs.getInt("link_id"),
+            rs.getInt("category_id"),
+            rs.getString("url"),
+            rs.getString("title")
+        );
+        link.setTags(getTagsForLink(conn, link.getLinkId()));
+        links.add(link);
+      }
+    } catch (SQLException e) {
+      System.out.println("Помилка при завантаженні посилань: " + e.getMessage());
+    } finally {
+      pool.releaseConnection(conn);
+    }
+    return links;
+  }
+
+  /**
+   * Отримує список тегів, прив'язаних до конкретного посилання.
+   */
+  private List<Tag> getTagsForLink(Connection conn, int linkId) {
+    List<Tag> tags = new ArrayList<>();
+    String sql = "SELECT t.tag_id, t.name FROM tags t " +
+        "INNER JOIN link_tags lt ON t.tag_id = lt.tag_id " +
+        "WHERE lt.link_id = ?";
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, linkId);
+      ResultSet rs = pstmt.executeQuery();
+      while (rs.next()) {
+        tags.add(new Tag(rs.getInt("tag_id"), rs.getString("name")));
+      }
+    } catch (SQLException e) {
+      System.out.println("Помилка при завантаженні тегів: " + e.getMessage());
+    }
+    return tags;
+  }
+
+  /**
+   * Видаляє посилання з бази даних.
+   */
+  public boolean deleteLink(int linkId) {
+    String sql = "DELETE FROM links WHERE link_id = ?";
+    Connection conn = pool.getConnection();
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, linkId);
+      return pstmt.executeUpdate() > 0;
+    } catch (SQLException e) {
+      System.out.println("Помилка при видаленні посилання: " + e.getMessage());
+      return false;
+    } finally {
+      pool.releaseConnection(conn);
+    }
+  }
+
+  // ==================== НОВИЙ МЕТОД ====================
+
+  /**
+   * Оновлює існуюче посилання в базі даних.
+   *
+   * @param link об'єкт посилання з оновленими даними (url, title, linkId)
+   */
+  public void updateLink(Link link) {
+    String sql = "UPDATE links SET url = ?, title = ? WHERE link_id = ?";
+    Connection conn = pool.getConnection();
+    try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setString(1, link.getUrl());
+      pstmt.setString(2, link.getTitle());
+      pstmt.setInt(3, link.getLinkId());
+      pstmt.executeUpdate();
+    } catch (SQLException e) {
+      System.out.println("Помилка при оновленні посилання: " + e.getMessage());
+    } finally {
+      pool.releaseConnection(conn);
+    }
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\repository\UnitOfWork.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+
+public class UnitOfWork implements AutoCloseable {
+
+  private final Connection connection;
+
+  public UnitOfWork() throws SQLException {
+    // Отримуємо з'єднання і вимикаємо автоматичне збереження кожного запиту
+    this.connection = DatabaseConnection.getInstance().getConnection();
+    this.connection.setAutoCommit(false);
+  }
+
+  public Connection getConnection() {
+    return connection;
+  }
+
+  public void commit() throws SQLException {
+    // Зберігаємо всі зміни разом єдиною транзакцією
+    connection.commit();
+  }
+
+  public void rollback() {
+    try {
+      if (connection != null) {
+        // Відкочуємо всі зміни у разі будь-якої помилки
+        connection.rollback();
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
+  public void close() throws SQLException {
+    if (connection != null) {
+      // Повертаємо стандартні налаштування перед закриттям
+      connection.setAutoCommit(true);
+      connection.close();
+    }
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\repository\UserRepository.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import com.konxma.linkvault.model.User;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.List;
+
+public class UserRepository {
+  private final EntityMapper<User> userMapper = new EntityMapper<>(User.class);
+  private final IdentityMap<User> identityMap = new IdentityMap<>();
+
+  public User save(User user) {
+    // Використовуємо універсальний SQL без специфічного "RETURNING"
+    String sql = "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)";
+
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        // Додаємо вказівку RETURN_GENERATED_KEYS
+        PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+      pstmt.setString(1, user.getUsername());
+      pstmt.setString(2, user.getEmail());
+      pstmt.setString(3, user.getPasswordHash());
+      pstmt.executeUpdate();
+
+      // Отримуємо згенерований базою даних ID
+      ResultSet rs = pstmt.getGeneratedKeys();
+      if (rs.next()) {
+        user.setUserId(rs.getInt(1)); // 1 - це номер колонки з ID
+        identityMap.put(user.getUserId(), user);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return user;
+  }
+
+  public User findById(int id) {
+    User cachedUser = identityMap.get(id);
+    if (cachedUser != null) {
+      return cachedUser;
+    }
+    String sql = "SELECT * FROM users WHERE user_id = ?";
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setInt(1, id);
+      ResultSet rs = pstmt.executeQuery();
+      List<User> users = userMapper.mapResultSetToList(rs);
+      if (!users.isEmpty()) {
+        User user = users.get(0);
+        identityMap.put(user.getUserId(), user);
+        return user;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public User findByEmail(String email) {
+    String sql = "SELECT * FROM users WHERE email = ?";
+    try (Connection conn = DatabaseConnection.getInstance().getConnection();
+        PreparedStatement pstmt = conn.prepareStatement(sql)) {
+      pstmt.setString(1, email);
+      ResultSet rs = pstmt.executeQuery();
+      List<User> users = userMapper.mapResultSetToList(rs);
+      if (!users.isEmpty()) {
+        User user = users.get(0);
+        identityMap.put(user.getUserId(), user);
+        return user;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public void clearCache() {
+    identityMap.clear();
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\service\CategoryService.java
+========================================================
+package com.konxma.linkvault.service;
+
+import com.konxma.linkvault.model.Category;
+import com.konxma.linkvault.repository.CategoryRepository;
+import java.util.List;
+
+public class CategoryService {
+  private final CategoryRepository categoryRepository;
+
+  public CategoryService() {
+    this.categoryRepository = new CategoryRepository();
+  }
+
+  public List<Category> getUserCategories(int userId) {
+    return categoryRepository.findByUserId(userId);
+  }
+
+  public void addCategory(Category category) {
+    categoryRepository.save(category);
+  }
+
+  public void updateCategory(Category category) {
+    categoryRepository.update(category);
+  }
+
+  public void deleteCategory(int categoryId) {
+    categoryRepository.delete(categoryId);
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\service\LinkService.java
+========================================================
+package com.konxma.linkvault.service;
+
+import com.konxma.linkvault.model.Link;
+import com.konxma.linkvault.repository.LinkRepository;
+import java.util.List;
+
+public class LinkService {
+  private final LinkRepository linkRepository;
+
+  public LinkService() {
+    this.linkRepository = new LinkRepository();
+  }
+
+  public List<Link> getLinksByCategory(int categoryId) {
+    return linkRepository.getLinksByCategoryId(categoryId);
+  }
+
+  public boolean addLinkWithTags(Link link, String tags) {
+    return linkRepository.addLinkWithTags(link, tags);
+  }
+
+  public void updateLink(Link link) {
+    linkRepository.updateLink(link);
+  }
+
+  public boolean deleteLink(int linkId) {
+    return linkRepository.deleteLink(linkId);
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\service\UserService.java
+========================================================
+package com.konxma.linkvault.service;
+
+import com.konxma.linkvault.model.User;
+import com.konxma.linkvault.model.Category;
+import com.konxma.linkvault.repository.UserRepository;
+import com.konxma.linkvault.repository.CategoryRepository;
+import com.konxma.linkvault.repository.UnitOfWork;
+import com.konxma.linkvault.infrastructure.PasswordHasher;
+import com.konxma.linkvault.infrastructure.EmailSender;
+
+public class UserService {
+  private final UserRepository userRepository;
+  private final CategoryRepository categoryRepository;
+  private final EmailSender emailSender;
+
+  public UserService() {
+    this.userRepository = new UserRepository();
+    this.categoryRepository = new CategoryRepository();
+    this.emailSender = new EmailSender();
+  }
+
+  public void registerNewUser(User user, String rawPassword) throws Exception {
+    // Використовуємо правильний try-with-resources (вирішує жовте попередження)
+    try (UnitOfWork uow = new UnitOfWork()) {
+      try {
+        // 1. Хешуємо пароль ПЕРЕД збереженням
+        String hashedPassword = PasswordHasher.hashPassword(rawPassword);
+        user.setPasswordHash(hashedPassword);
+
+        // 2. Зберігаємо користувача
+        User savedUser = userRepository.save(user);
+
+        // 3. Створюємо базову категорію
+        Category defaultCategory = new Category();
+        defaultCategory.setUserId(savedUser.getUserId());
+        defaultCategory.setName("Загальна папка");
+        defaultCategory.setDescription("Мої перші посилання");
+        categoryRepository.save(defaultCategory);
+
+        // 4. Підтверджуємо транзакцію
+        uow.commit();
+
+        // 5. Відправляємо лист підтвердження
+        emailSender.sendConfirmationEmail(savedUser.getEmail(), savedUser.getUsername());
+
+      } catch (Exception e) {
+        uow.rollback();
+        throw e;
+      }
+    }
+  }
+
+  public User authenticate(String email, String rawPassword) {
+    User user = userRepository.findByEmail(email);
+    // Об'єднали if для чистоти коду (вирішує жовте попередження)
+    if (user != null && PasswordHasher.verifyPassword(rawPassword, user.getPasswordHash())) {
+      return user;
+    }
+    return null;
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\ui\LoginController.java
+========================================================
+package com.konxma.linkvault.ui;
+
+import com.konxma.linkvault.dto.UserDTO;
+import com.konxma.linkvault.model.User;
+import com.konxma.linkvault.service.UserService;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * Контролер вікна авторизації та реєстрації.
+ * Відповідає за обробку введення користувача та взаємодію з UserService.
+ * Операції з базою даних виконуються асинхронно для уникнення блокування UI.
+ */
+public class LoginController {
+
+  @FXML private TextField emailField;
+  @FXML private PasswordField passwordField;
+  @FXML private Label errorLabel;
+  @FXML private Button loginButton;
+  @FXML private Button registerButton;
+
+  private final UserService userService;
+
+  public LoginController() {
+    // ВИПРАВЛЕНО: Новий UserService більше не потребує передачі репозиторію в конструктор
+    this.userService = new UserService();
+  }
+
+  /**
+   * Обробляє подію натискання на кнопку входу.
+   * Виконує перевірку даних у фоновому потоці.
+   */
+  @FXML
+  private void handleLogin() {
+    String email = emailField.getText();
+    String password = passwordField.getText();
+
+    loginButton.setDisable(true); // Блокуємо кнопку на час запиту
+    errorLabel.setStyle("-fx-text-fill: gray;");
+    errorLabel.setText("Перевірка даних...");
+
+    // ВИПРАВЛЕНО: Використовуємо новий метод authenticate
+    CompletableFuture.supplyAsync(() -> userService.authenticate(email, password))
+        .thenAccept(user -> {
+          // Повертаємось у головний потік JavaFX для оновлення інтерфейсу
+          Platform.runLater(() -> {
+            loginButton.setDisable(false);
+            if (user != null) {
+              errorLabel.setStyle("-fx-text-fill: green;");
+              errorLabel.setText("Успішний вхід!");
+
+              // ВИПРАВЛЕНО: Перетворюємо отриману модель User на UserDTO для інтерфейсу
+              UserDTO userDTO = new UserDTO(user.getUserId(), user.getUsername(), user.getEmail());
+              loadMainWindow(userDTO);
+            } else {
+              errorLabel.setStyle("-fx-text-fill: red;");
+              errorLabel.setText("Невірний email або пароль.");
+            }
+          });
+        })
+        .exceptionally(ex -> {
+          Platform.runLater(() -> {
+            loginButton.setDisable(false);
+            errorLabel.setStyle("-fx-text-fill: red;");
+            errorLabel.setText("Помилка з'єднання з базою.");
+          });
+          return null;
+        });
+  }
+
+  /**
+   * Завантажує головне вікно після успішної авторизації.
+   */
+  private void loadMainWindow(UserDTO user) {
+    try {
+      FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/MainView.fxml"));
+      Parent root = loader.load();
+
+      MainController mainController = loader.getController();
+      mainController.initData(user);
+
+      Stage stage = (Stage) emailField.getScene().getWindow();
+      stage.setScene(new Scene(root, 800, 600));
+      stage.setTitle("LinkVault - " + user.getUsername());
+      stage.setResizable(true);
+      stage.centerOnScreen();
+    } catch (Exception e) {
+      e.printStackTrace();
+      errorLabel.setStyle("-fx-text-fill: red;");
+      errorLabel.setText("Помилка завантаження вікна.");
+    }
+  }
+
+  /**
+   * Обробляє подію натискання на кнопку реєстрації у фоновому потоці.
+   */
+  @FXML
+  private void handleRegister() {
+    String email = emailField.getText();
+    String password = passwordField.getText();
+    String username = email.contains("@") ? email.split("@")[0] : email;
+
+    registerButton.setDisable(true);
+    errorLabel.setStyle("-fx-text-fill: gray;");
+    errorLabel.setText("Реєстрація...");
+
+    // ВИПРАВЛЕНО: Створюємо об'єкт User і безпечно обробляємо реєстрацію через транзакцію
+    CompletableFuture.supplyAsync(() -> {
+          try {
+            User newUser = new User();
+            newUser.setUsername(username);
+            newUser.setEmail(email);
+            // Ми більше не сетимо пароль напряму! Передаємо його другим параметром:
+            userService.registerNewUser(newUser, password);
+
+            return true; // Якщо транзакція пройшла успішно
+          } catch (Exception e) {
+            e.printStackTrace();
+            return false; // Якщо база відхилила запис (наприклад, дубль email)
+          }
+        })
+        .thenAccept(success -> {
+          Platform.runLater(() -> {
+            registerButton.setDisable(false);
+            if (success) {
+              errorLabel.setStyle("-fx-text-fill: green;");
+              errorLabel.setText("Реєстрація успішна! Тепер натисніть 'Увійти'.");
+            } else {
+              errorLabel.setStyle("-fx-text-fill: red;");
+              errorLabel.setText("Помилка реєстрації. Перевірте дані.");
+            }
+          });
+        })
+        .exceptionally(ex -> {
+          Platform.runLater(() -> {
+            registerButton.setDisable(false);
+            errorLabel.setStyle("-fx-text-fill: red;");
+            errorLabel.setText("Помилка під час реєстрації.");
+          });
+          return null;
+        });
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\ui\MainController.java
+========================================================
+package com.konxma.linkvault.ui;
+
+import com.konxma.linkvault.dto.UserDTO;
+import com.konxma.linkvault.model.Category;
+import com.konxma.linkvault.model.Link;
+import com.konxma.linkvault.service.CategoryService;
+import com.konxma.linkvault.service.LinkService;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
+import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.GridPane;
+import javafx.util.Pair;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * Контролер головного вікна програми.
+ * Управління відображенням категорій, таблицею посилань та реактивним пошуком.
+ * Всі звернення до бази даних виконуються через шар Сервісів асинхронно.
+ */
+public class MainController {
+
+  @FXML private ListView<Category> categoryListView;
+  @FXML private TableView<Link> linksTable;
+  @FXML private TableColumn<Link, String> titleColumn;
+  @FXML private TableColumn<Link, String> urlColumn;
+  @FXML private TableColumn<Link, String> tagsColumn;
+  @FXML private Label currentCategoryLabel;
+  @FXML private TextField searchField;
+
+  private UserDTO currentUser;
+
+  // ВИМОГА ВИКЛАДАЧА: Використовуємо сервіси замість репозиторіїв
+  private CategoryService categoryService;
+  private LinkService linkService;
+
+  public void initData(UserDTO user) {
+    this.currentUser = user;
+    this.categoryService = new CategoryService();
+    this.linkService = new LinkService();
+
+    titleColumn.setCellValueFactory(new PropertyValueFactory<>("title"));
+    urlColumn.setCellValueFactory(new PropertyValueFactory<>("url"));
+    tagsColumn.setCellValueFactory(new PropertyValueFactory<>("tagsAsString"));
+
+    categoryListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+      if (newValue != null) {
+        currentCategoryLabel.setText("Папка: " + newValue.getName() + " (Завантаження...)");
+        loadLinksForCategoryAsync(newValue.getCategoryId(), newValue.getName());
+      }
+    });
+
+    loadCategoriesAsync();
+  }
+
+  private void loadCategoriesAsync() {
+    // Звертаємось до CategoryService
+    CompletableFuture.supplyAsync(() -> categoryService.getUserCategories(currentUser.getUserId()))
+        .thenAccept(categories -> {
+          Platform.runLater(() -> {
+            categoryListView.getItems().clear();
+            categoryListView.getItems().addAll(categories);
+          });
+        })
+        .exceptionally(ex -> {
+          Platform.runLater(() -> showAlert("Помилка", "Не вдалося завантажити категорії."));
+          return null;
+        });
+  }
+
+  private void loadLinksForCategoryAsync(int categoryId, String categoryName) {
+    // Звертаємось до LinkService
+    CompletableFuture.supplyAsync(() -> linkService.getLinksByCategory(categoryId))
+        .thenAccept(links -> {
+          Platform.runLater(() -> {
+            currentCategoryLabel.setText("Папка: " + categoryName);
+            ObservableList<Link> masterData = FXCollections.observableArrayList(links);
+            FilteredList<Link> filteredData = new FilteredList<>(masterData, p -> true);
+
+            if (searchField != null) {
+              searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+                filteredData.setPredicate(link -> {
+                  if (newValue == null || newValue.isEmpty()) return true;
+                  String lowerCaseFilter = newValue.toLowerCase();
+                  if (link.getTitle().toLowerCase().contains(lowerCaseFilter)) return true;
+                  if (link.getUrl().toLowerCase().contains(lowerCaseFilter)) return true;
+                  if (link.getTagsAsString().toLowerCase().contains(lowerCaseFilter)) return true;
+                  return false;
+                });
+              });
+              searchField.setText("");
+            }
+
+            SortedList<Link> sortedData = new SortedList<>(filteredData);
+            sortedData.comparatorProperty().bind(linksTable.comparatorProperty());
+            linksTable.setItems(sortedData);
+          });
+        })
+        .exceptionally(ex -> {
+          Platform.runLater(() -> {
+            currentCategoryLabel.setText("Помилка завантаження");
+            showAlert("Помилка", "Не вдалося завантажити посилання.");
+          });
+          return null;
+        });
+  }
+
+  @FXML
+  private void handleAddCategory() {
+    TextInputDialog dialog = new TextInputDialog();
+    dialog.setTitle("Нова папка");
+    dialog.setHeaderText("Створення нової папки");
+    dialog.setContentText("Введіть назву:");
+
+    Optional<String> result = dialog.showAndWait();
+    result.ifPresent(name -> {
+      if (!name.trim().isEmpty()) {
+        Category newCategory = new Category(0, currentUser.getUserId(), name, "");
+
+        CompletableFuture.runAsync(() -> categoryService.addCategory(newCategory))
+            .thenRun(() -> Platform.runLater(this::loadCategoriesAsync))
+            .exceptionally(ex -> {
+              Platform.runLater(() -> showAlert("Помилка", "Не вдалося створити папку."));
+              return null;
+            });
+      }
+    });
+  }
+
+  @FXML
+  private void handleAddLink() {
+    Category selectedCategory = categoryListView.getSelectionModel().getSelectedItem();
+    if (selectedCategory == null) {
+      showAlert("Помилка", "Спочатку оберіть папку зліва, куди додати посилання!");
+      return;
+    }
+
+    Dialog<Pair<Link, String>> dialog = new Dialog<>();
+    dialog.setTitle("Нова закладка");
+    dialog.setHeaderText("Додавання посилання в папку: " + selectedCategory.getName());
+
+    ButtonType saveButtonType = new ButtonType("Зберегти", ButtonBar.ButtonData.OK_DONE);
+    dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+    GridPane grid = new GridPane();
+    grid.setHgap(10);
+    grid.setVgap(10);
+    grid.setPadding(new Insets(20, 150, 10, 10));
+
+    TextField titleField = new TextField();
+    titleField.setPromptText("Наприклад: Google");
+    TextField urlField = new TextField();
+    urlField.setPromptText("https://...");
+    TextField tagsField = new TextField();
+    tagsField.setPromptText("Java, Навчання, Важливе");
+
+    grid.add(new Label("Назва:"), 0, 0);
+    grid.add(titleField, 1, 0);
+    grid.add(new Label("URL:"), 0, 1);
+    grid.add(urlField, 1, 1);
+    grid.add(new Label("Теги (через кому):"), 0, 2);
+    grid.add(tagsField, 1, 2);
+
+    dialog.getDialogPane().setContent(grid);
+
+    dialog.setResultConverter(dialogButton -> {
+      if (dialogButton == saveButtonType && !urlField.getText().isEmpty() && !titleField.getText().isEmpty()) {
+        Link newLink = new Link(0, selectedCategory.getCategoryId(), urlField.getText(), titleField.getText());
+        return new Pair<>(newLink, tagsField.getText());
+      }
+      return null;
+    });
+
+    Optional<Pair<Link, String>> result = dialog.showAndWait();
+    result.ifPresent(pair -> {
+      Link link = pair.getKey();
+      String tagsString = pair.getValue();
+
+      CompletableFuture.supplyAsync(() -> linkService.addLinkWithTags(link, tagsString))
+          .thenAccept(success -> {
+            Platform.runLater(() -> {
+              if (success) {
+                loadLinksForCategoryAsync(selectedCategory.getCategoryId(), selectedCategory.getName());
+              } else {
+                showAlert("Помилка", "Не вдалося зберегти посилання.");
+              }
+            });
+          });
+    });
+  }
+
+  @FXML
+  private void handleDeleteLink() {
+    Link selectedLink = linksTable.getSelectionModel().getSelectedItem();
+    if (selectedLink == null) {
+      showAlert("Увага", "Оберіть посилання в таблиці для видалення.");
+      return;
+    }
+
+    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+    alert.setTitle("Підтвердження");
+    alert.setHeaderText("Видалити це посилання?");
+    alert.setContentText(selectedLink.getTitle());
+
+    Optional<ButtonType> result = alert.showAndWait();
+    if (result.isPresent() && result.get() == ButtonType.OK) {
+      CompletableFuture.supplyAsync(() -> linkService.deleteLink(selectedLink.getLinkId()))
+          .thenAccept(success -> {
+            Platform.runLater(() -> {
+              if (success) {
+                linksTable.getItems().remove(selectedLink);
+              } else {
+                showAlert("Помилка", "Не вдалося видалити.");
+              }
+            });
+          });
+    }
+  }
+
+  private void showAlert(String title, String message) {
+    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    alert.setTitle(title);
+    alert.setHeaderText(null);
+    alert.setContentText(message);
+    alert.showAndWait();
+  }
+}
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\Launcher.java
+========================================================
+package com.konxma.linkvault;
+
+/**
+ * Клас-обгортка для запуску JavaFX додатку.
+ * Необхідний для коректної збірки та запуску проєкту у вигляді єдиного JAR-файлу (fat-jar),
+ * оминаючи обмеження модульної системи Java.
+ */
+public class Launcher {
+
+  /**
+   * Головний метод, який делегує запуск основному класу програми.
+   *
+   * @param args аргументи командного рядка.
+   */
+  public static void main(String[] args) {
+    Main.main(args);
+  }
+}
+
+
+
+========================================================
+����: src\main\java\com\konxma\linkvault\Main.java
+========================================================
+package com.konxma.linkvault;
+
+import com.konxma.linkvault.repository.DatabaseConnection;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+import java.util.Objects;
+
+/**
+ * Головний клас програми, що ініціалізує JavaFX-додаток.
+ * Відповідає за запуск міграцій бази даних та відображення першого вікна (авторизації).
+ */
+public class Main extends Application {
+
+  /**
+   * Метод ініціалізації головного вікна програми.
+   *
+   * @param primaryStage головна сцена (вікно) додатку.
+   * @throws Exception якщо виникає помилка завантаження FXML-файлу.
+   */
+  @Override
+  public void start(Stage primaryStage) throws Exception {
+    Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/view/LoginView.fxml")));
+    Scene scene = new Scene(root, 400, 350);
+    primaryStage.setTitle("LinkVault - Авторизація");
+    primaryStage.setScene(scene);
+    primaryStage.setResizable(false);
+    primaryStage.show();
+  }
+
+  /**
+   * Точка входу в програму. Виконує міграції бази даних перед запуском інтерфейсу.
+   *
+   * @param args аргументи командного рядка.
+   */
+  public static void main(String[] args) {
+    try {
+      DatabaseConnection.migrateDatabase();
+    } catch (Exception e) {
+      System.err.println("Помилка при виконанні міграцій: " + e.getMessage());
+      e.printStackTrace();
+      return;
+    }
+    launch(args);
+  }
+}
+
+
+
+========================================================
+����: src\main\resources\db\migration\V1__Create_schema.sql
+========================================================
+-- Таблиця 1: users (Користувачі)
+-- Тип: Довідкова таблиця (Master table).
+-- Нормалізація: 3НФ. Усі неключові атрибути (username, email, password_hash)
+-- залежать тільки від первинного ключа (user_id) і не залежать один від одного.
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблиця 2: categories (Категорії/Папки)
+-- Тип: Довідкова таблиця / Таблиця зв'язку 1:N (від users).
+-- Нормалізація: 3НФ. Атрибути залежать лише від category_id.
+CREATE TABLE categories (
+    category_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT
+);
+
+-- Таблиця 3: links (Посилання)
+-- Тип: Транзакційна таблиця (Transaction table) - зберігає основні події системи.
+-- Нормалізація: 3НФ. Дані специфічні лише для конкретного посилання.
+CREATE TABLE links (
+    link_id SERIAL PRIMARY KEY,
+    category_id INTEGER REFERENCES categories(category_id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблиця 4: tags (Теги)
+-- Тип: Словник (Dictionary table).
+-- Нормалізація: 3НФ.
+CREATE TABLE tags (
+    tag_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- Таблиця 5: link_tags (Зв'язок посилань та тегів)
+-- Тип: Проміжна таблиця (Junction table). Реалізує зв'язок Багато-до-Багатьох (N:M).
+-- Нормалізація: 3НФ. Первинний ключ є складеним.
+CREATE TABLE link_tags (
+    link_id INTEGER REFERENCES links(link_id) ON DELETE CASCADE,
+    tag_id INTEGER REFERENCES tags(tag_id) ON DELETE CASCADE,
+    PRIMARY KEY (link_id, tag_id)
+);
+
+-- Індекси для оптимізації пошуку (вимога викладача)
+CREATE INDEX idx_links_category ON links(category_id);
+CREATE INDEX idx_users_email ON users(email);
+
+
+========================================================
+����: src\main\resources\db\migration\V2__Seed_data.sql
+========================================================
+BEGIN TRANSACTION;
+
+-- 100 реалістичних користувачів (Пароль для всіх: 123456)
+INSERT INTO users (username, email, password_hash) VALUES
+('student_test', 'test@knu.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('vadym_tk', 'vadym.work@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('elena_dev', 'elena.developer@ukr.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('max_designer', 'max.design@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('anna_hr', 'anna.hr@company.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('alex_sysadmin', 'alex.sys@corp.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('maria_qa', 'maria.qa@test.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('dmytro_pm', 'dima.pm@agency.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('yuliia_data', 'julia.data@analytics.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('andriy_sec', 'andriy.security@bank.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('oleg_marketing', 'oleg.marketing@brand.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('iryna_sales', 'iryna.sales@global.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('taras_devops', 'taras.ops@cloud.io', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('olga_data', 'olga.science@tech.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('igor_seo', 'igor.seo@web.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('natalia_pr', 'nata.pr@media.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('viktor_ceo', 'viktor.director@startup.io', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('daryna_smm', 'daryna.social@insta.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('artem_3d', 'artem.3d@cg.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('katerina_copy', 'katya.texts@blog.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('denys_backend', 'denys.java@dev.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('alina_ui', 'alina.ui@design.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('roman_analyst', 'roman.ba@finance.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('tetiana_sup', 'tanya.help@service.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('yurii_dba', 'yura.sql@db.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('svitlana_hr', 'sveta.hr@talent.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('mykola_log', 'kolya.logistic@trans.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('oksana_fin', 'oksana.money@bank.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('pavlo_legal', 'pavel.law@juris.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('vika_recruiter', 'vika.find@jobs.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('anton_game', 'anton.unity@games.io', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('marta_ill', 'marta.art@draw.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('bogdan_ios', 'bogdan.swift@apple.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('lilia_android', 'lilia.kotlin@droid.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('vlad_csharp', 'vlad.dotnet@microsoft.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('yevhen_py', 'evgen.py@script.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('sofia_ml', 'sofia.ai@machine.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('maksym_ai', 'max.gpt@neuro.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('daria_scrum', 'daria.scrum@agile.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('rostyslav_cfo', 'rostik.audit@money.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('anastasia_ev', 'nastia.party@events.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('valerii_arch', 'valera.sys@infra.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('yuliia_teacher', 'julia.edu@school.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('olexandr_stu', 'sasha.uni@knu.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('mariia_doc', 'masha.med@clinic.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('illia_driver', 'illia.auto@uber.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('kristina_chef', 'kris.food@resto.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('stepan_mech', 'stepa.fix@garage.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('veronika_art', 'nika.paint@gallery.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('gennadii_fit', 'gena.fit@sport.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('mark_trader', 'mark.trade@crypto.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('inna_tutor', 'inna.eng@lessons.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('ruslan_build', 'ruslan.con@stroika.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('nadiya_eco', 'nadiya.green@eco.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('borys_sec', 'borys.guard@shield.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('larysa_acc', 'larysa.book@tax.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('viktor_dj', 'vitya.music@club.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('polina_photo', 'polya.cam@studio.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('kostya_stream', 'kostya.tv@twitch.tv', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('diana_model', 'diana.style@vogue.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('timur_law', 'timur.court@justice.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('zoya_vet', 'zoya.pets@clinic.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('kirill_barber', 'kirill.cut@barber.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('nina_florist', 'nina.flowers@bloom.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('leonid_pilot', 'leo.sky@avia.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('rita_travel', 'rita.tour@world.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('slava_chef', 'slava.cook@kitchen.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('mira_yoga', 'mira.zen@studio.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('fedor_smith', 'fedya.iron@forge.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('tina_vocals', 'tina.sing@voice.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('vadim_pro', 'vadim.coder@dev.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('elza_data', 'elza.sql@db.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('boris_sys', 'boris.adm@linux.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('alla_pm', 'alla.scrum@agile.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('gleb_design', 'gleb.ui@figma.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('lada_qa', 'lada.test@bugs.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('zahar_devops', 'zahar.ops@docker.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('mila_hr', 'mila.hire@jobs.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('roma_seo', 'roma.rank@google.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('kira_smm', 'kira.post@meta.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('sava_copy', 'sava.write@blog.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('zoya_analyst', 'zoya.data@stats.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('nazar_game', 'nazar.ue5@games.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('lara_art', 'lara.draw@canvas.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('yan_ios', 'yan.apple@mac.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('eva_android', 'eva.droid@google.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('klim_csharp', 'klim.net@ms.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('mira_python', 'mira.py@snake.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('lev_ml', 'lev.ai@model.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('dana_ai', 'dana.gpt@openai.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('gleb_cfo', 'gleb.money@bank.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('inna_event', 'inna.party@club.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('vova_arch', 'vova.sys@build.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('yulia_teach', 'yulia.math@school.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('sasha_student', 'sasha.it@knu.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('masha_doc', 'masha.health@med.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('ilya_drive', 'ilya.car@taxi.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('kris_chef', 'kris.bake@cafe.net', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('stepa_mech', 'stepa.moto@garage.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'),
+('nika_art', 'nika.design@draw.ua', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92');
+
+-- 40 категорій для перших 20 користувачів
+INSERT INTO categories (user_id, name, description) VALUES
+(1, 'Університет', 'Конспекти, розклад, Moodle'),
+(1, 'Курсова', 'Матеріали для курсової роботи'),
+(2, 'Робочі таски', 'Посилання на Jira та GitHub'),
+(2, 'Java та Spring Boot', 'Документація по бекенду'),
+(2, 'Мобільна розробка', 'React Native, Expo, документація'),
+(2, 'Мій Велосипед', 'Модифікація, запчастини для Bianchi'),
+(2, 'Аналітика TikTok', 'Тренди, монетизація, статистика'),
+(2, 'Аніме', 'Що подивитися на вихідних'),
+(3, 'Frontend', 'React, CSS, анімації'),
+(3, 'Шпаргалки', 'Регулярні вирази, Git команди'),
+(4, 'UI/UX Натхнення', 'Приклади гарного дизайну'),
+(4, 'Шрифти та Іконки', 'Ресурси для макетів'),
+(5, 'Рекрутинг', 'Платформи для пошуку кандидатів'),
+(5, 'Психологія', 'Соціоніка, тести Big Five'),
+(6, 'Сервери', 'Налаштування Linux, Docker'),
+(6, 'Моніторинг', 'Grafana, Prometheus'),
+(7, 'Тестування', 'Selenium, JUnit, Postman'),
+(8, 'Менеджмент', 'Agile, Scrum дошки'),
+(9, 'Data Science', 'Jupyter, Pandas, SQL'),
+(10, 'Кібербезпека', 'OWASP, статті, тулзи'),
+(11, 'Маркетинг', 'SEO, реклама, Google Ads'),
+(12, 'Продажі', 'CRM системи, бази клієнтів'),
+(13, 'DevOps Pipeline', 'GitLab CI, Jenkins, AWS'),
+(14, 'Machine Learning', 'TensorFlow, Keras'),
+(15, 'SEO Оптимізація', 'Ahrefs, Semrush, ключові слова'),
+(16, 'PR та Медіа', 'Контакти журналістів, прес-релізи'),
+(17, 'Стартап', 'Pitch deck, інвестори'),
+(18, 'SMM', 'Ідеї для Reels, контент-план'),
+(19, '3D Моделювання', 'Blender, Maya туторіали'),
+(20, 'Копірайтинг', 'Словники, перевірка тексту'),
+(1, 'Англійська мова', 'Граматика, словники, курси A1-B2'),
+(2, 'Психологія організації', 'Матеріали з навчальних дисциплін'),
+(3, 'TypeScript', 'Документація та патерни'),
+(4, 'Кольорові палітри', 'Генератори кольорів для сайтів'),
+(5, 'Співбесіди', 'Питання для кандидатів на Java'),
+(6, 'Bash скрипти', 'Автоматизація рутини'),
+(7, 'Автотести', 'Cypress, Playwright'),
+(8, 'Комунікація', 'Slack, Zoom, Meet'),
+(9, 'Візуалізація даних', 'Tableau, PowerBI'),
+(10, 'Криптографія', 'Алгоритми шифрування, хеші');
+
+-- 120 посилань (Links)
+INSERT INTO links (category_id, url, title) VALUES
+(1, 'https://classroom.google.com/', 'Google Classroom'),
+(1, 'https://moodle.org/', 'Moodle - Система дистанційного навчання'),
+(2, 'https://scholar.google.com/', 'Google Scholar'),
+(3, 'https://github.com/', 'GitHub - Репозиторії'),
+(3, 'https://jira.atlassian.com/', 'Jira - Трекер задач'),
+(4, 'https://docs.oracle.com/en/java/', 'Java Official Documentation'),
+(4, 'https://spring.io/projects/spring-boot', 'Spring Boot Framework'),
+(4, 'https://www.postgresql.org/docs/', 'PostgreSQL Docs'),
+(5, 'https://reactnative.dev/', 'React Native Docs'),
+(5, 'https://expo.dev/', 'Expo - Платформа для мобільних додатків'),
+(6, 'https://www.parktool.com/', 'Park Tool - Ремонт велосипедів'),
+(6, 'https://bike-components.de/', 'Bike Components - Магазин запчастин'),
+(6, 'https://ebikes.ca/', 'Grin Technologies - Електромотори для велосипедів'),
+(7, 'https://www.tiktok.com/creators/creator-portal/', 'TikTok Creator Portal'),
+(7, 'https://tokboard.com/', 'TokBoard - Тренди музики TikTok'),
+(8, 'https://myanimelist.net/anime/38691/Dr_Stone', 'Dr. Stone - MyAnimeList'),
+(8, 'https://myanimelist.net/anime/52991/Sousou_no_Frieren', 'Frieren: Beyond Journeys End'),
+(8, 'https://myanimelist.net/anime/54492/Kusuriya_no_Hitorigoto', 'The Apothecary Diaries'),
+(9, 'https://react.dev/', 'React Documentation'),
+(9, 'https://developer.mozilla.org/', 'MDN Web Docs'),
+(10, 'https://regex101.com/', 'Regex101 - Тестування регулярних виразів'),
+(10, 'https://ohshitgit.com/', 'Oh Shit, Git! - Рішення проблем з гітом'),
+(11, 'https://dribbble.com/', 'Dribbble - Дизайн портфоліо'),
+(11, 'https://www.behance.net/', 'Behance - Креативна мережа'),
+(12, 'https://fonts.google.com/', 'Google Fonts'),
+(12, 'https://fontawesome.com/', 'Font Awesome Icons'),
+(13, 'https://djinni.co/', 'Djinni - Пошук IT спеціалістів'),
+(13, 'https://www.linkedin.com/', 'LinkedIn'),
+(14, 'https://www.16personalities.com/', '16Personalities - Тест MBTI'),
+(14, 'https://uk.wikipedia.org/wiki/Психологія_праці', 'Психологія праці - Вікіпедія'),
+(15, 'https://www.docker.com/', 'Docker Official'),
+(15, 'https://kubernetes.io/', 'Kubernetes Docs'),
+(16, 'https://grafana.com/', 'Grafana Dashboards'),
+(17, 'https://www.postman.com/', 'Postman API Platform'),
+(18, 'https://trello.com/', 'Trello'),
+(19, 'https://pandas.pydata.org/', 'Pandas Documentation'),
+(20, 'https://owasp.org/', 'OWASP Foundation'),
+(21, 'https://analytics.google.com/', 'Google Analytics'),
+(22, 'https://www.salesforce.com/', 'Salesforce CRM'),
+(23, 'https://aws.amazon.com/', 'Amazon Web Services'),
+(24, 'https://www.tensorflow.org/', 'TensorFlow'),
+(25, 'https://ahrefs.com/', 'Ahrefs SEO Tools'),
+(26, 'https://medium.com/', 'Medium - Статті та блоги'),
+(27, 'https://ycombinator.com/', 'Y Combinator'),
+(28, 'https://later.com/', 'Later - Планувальник соцмереж'),
+(29, 'https://www.blender.org/', 'Blender 3D'),
+(30, 'https://languagetool.org/', 'LanguageTool - Перевірка граматики'),
+(31, 'https://dictionary.cambridge.org/', 'Cambridge Dictionary'),
+(31, 'https://www.duolingo.com/', 'Duolingo'),
+(32, 'https://hbr.org/', 'Harvard Business Review'),
+(33, 'https://www.typescriptlang.org/', 'TypeScript Docs'),
+(34, 'https://coolors.co/', 'Coolors - Генератор палітр'),
+(35, 'https://leetcode.com/', 'LeetCode - Задачі для співбесід'),
+(36, 'https://devhints.io/bash', 'Bash Scripting Cheatsheet'),
+(37, 'https://www.cypress.io/', 'Cypress Testing'),
+(38, 'https://slack.com/', 'Slack'),
+(39, 'https://powerbi.microsoft.com/', 'Microsoft Power BI'),
+(40, 'https://jwt.io/', 'JSON Web Tokens'),
+(4, 'https://www.baeldung.com/', 'Baeldung - Java Guides'),
+(5, 'https://reactnavigation.org/', 'React Navigation'),
+(6, 'https://www.shimano.com/', 'Shimano Bicycle Components'),
+(8, 'https://crunchyroll.com/', 'Crunchyroll - Аніме стрімінг'),
+(14, 'https://www.psychologytoday.com/', 'Psychology Today - Articles'),
+(11, 'https://awwwards.com/', 'Awwwards - Website Awards'),
+(15, 'https://ubuntu.com/server', 'Ubuntu Server Documentation'),
+(17, 'https://swagger.io/', 'Swagger API Documentation'),
+(19, 'https://jupyter.org/', 'Jupyter Notebooks'),
+(23, 'https://about.gitlab.com/', 'GitLab CI/CD'),
+(24, 'https://pytorch.org/', 'PyTorch Machine Learning'),
+(29, 'https://sketchfab.com/', 'Sketchfab - 3D Models'),
+(1, 'https://kahoot.com/', 'Kahoot! - Навчальні вікторини'),
+(3, 'https://bitbucket.org/', 'Bitbucket - Репозиторії'),
+(4, 'https://hibernate.org/', 'Hibernate ORM'),
+(5, 'https://firebase.google.com/', 'Firebase - Бази для мобільних додатків'),
+(7, 'https://www.capcut.com/', 'CapCut - Відеоредактор для TikTok'),
+(10, 'https://dev.to/', 'DEV Community'),
+(12, 'https://heroicons.com/', 'Heroicons - SVG іконки'),
+(13, 'https://dou.ua/', 'DOU - Спільнота програмістів'),
+(16, 'https://prometheus.io/', 'Prometheus Monitoring'),
+(21, 'https://mailchimp.com/', 'Mailchimp - Email Marketing'),
+(35, 'https://hackerrank.com/', 'HackerRank - Задачі та контести'),
+(40, 'https://letsencrypt.org/', 'Let''s Encrypt - Безкоштовні SSL сертифікати');
+
+-- 30 Тегів
+INSERT INTO tags (name) VALUES
+('Університет'), ('Навчання'), ('Робота'), ('Java'), ('Spring Boot'),
+('PostgreSQL'), ('React Native'), ('Мобільна розробка'), ('Велосипед'), ('Хобі'),
+('Аніме'), ('TikTok'), ('Аналітика'), ('Frontend'), ('Дизайн'),
+('Рекрутинг'), ('Психологія'), ('DevOps'), ('Тестування'), ('Data Science'),
+('Маркетинг'), ('SEO'), ('SMM'), ('Англійська'), ('Бази Даних'),
+('Довідник'), ('Спорт'), ('UI/UX'), ('Кібербезпека'), ('Інструменти');
+
+-- Зв'язуємо посилання з тегами (сотні зв'язків для реалістичності)
+INSERT INTO link_tags (link_id, tag_id) VALUES
+(1, 1), (1, 2), (2, 1), (2, 2), (3, 1), (3, 26), (4, 3), (4, 30), (5, 3), (5, 30),
+(6, 4), (6, 26), (7, 4), (7, 5), (8, 6), (8, 25), (9, 7), (9, 8), (10, 7), (10, 8),
+(11, 9), (11, 10), (12, 9), (12, 27), (13, 9), (13, 10), (14, 12), (14, 13), (15, 12), (15, 13),
+(16, 11), (16, 10), (17, 11), (17, 10), (18, 11), (18, 10), (19, 14), (19, 26), (20, 14), (20, 26),
+(21, 30), (22, 30), (23, 15), (23, 28), (24, 15), (24, 28), (25, 15), (25, 28), (26, 15), (26, 28),
+(27, 16), (27, 3), (28, 16), (28, 3), (29, 17), (29, 2), (30, 17), (30, 2), (31, 18), (31, 30),
+(32, 18), (32, 30), (33, 18), (33, 30), (34, 19), (34, 30), (35, 3), (35, 30), (36, 20), (36, 25),
+(37, 29), (37, 26), (38, 21), (38, 13), (39, 3), (39, 30), (40, 18), (40, 30), (41, 20), (41, 26),
+(42, 22), (42, 21), (43, 2), (43, 26), (44, 3), (44, 30), (45, 23), (45, 21), (46, 15), (46, 10),
+(47, 2), (47, 30), (48, 24), (48, 26), (49, 24), (49, 2), (50, 3), (50, 17), (51, 14), (51, 26),
+(52, 15), (52, 28), (53, 4), (53, 3), (54, 30), (54, 18), (55, 19), (55, 30), (56, 3), (56, 30),
+(57, 20), (57, 13), (58, 29), (58, 26), (59, 4), (59, 26), (60, 7), (60, 8), (61, 9), (61, 10),
+(62, 11), (62, 10), (63, 17), (63, 26), (64, 15), (64, 28), (65, 18), (65, 30), (66, 19), (66, 30),
+(67, 20), (67, 26), (68, 18), (68, 30), (69, 20), (69, 26), (70, 15), (70, 10), (71, 1), (71, 2),
+(72, 3), (72, 30), (73, 4), (73, 25), (74, 8), (74, 25), (75, 12), (75, 30), (76, 3), (76, 26),
+(77, 15), (77, 28), (78, 3), (78, 16), (79, 18), (79, 30), (80, 21), (80, 30), (81, 4), (81, 3),
+(82, 29), (82, 30);
+
+COMMIT;
+
+
+========================================================
+����: src\main\resources\view\LoginView.fxml
+========================================================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.konxma.linkvault.ui.LoginController">
+  <padding>
+    <Insets bottom="40.0" left="40.0" right="40.0" top="40.0" />
+  </padding>
+
+  <Label text="LinkVault">
+    <font>
+      <Font name="System Bold" size="28.0" />
+    </font>
+  </Label>
+
+  <Label text="Вхід у систему" textFill="#555555" />
+
+  <TextField fx:id="emailField" promptText="Email" />
+  <PasswordField fx:id="passwordField" promptText="Пароль" />
+
+  <Button fx:id="loginButton" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleLogin" text="Увійти" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+  <Button fx:id="registerButton" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleRegister" text="Створити акаунт" style="-fx-background-color: transparent; -fx-text-fill: #2196F3;"/>
+
+  <Label fx:id="errorLabel" textFill="RED" />
+</VBox>
+
+
+========================================================
+����: src\main\resources\view\MainView.fxml
+========================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane prefHeight="600" prefWidth="900" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.konxma.linkvault.ui.MainController">
+  <left>
+    <VBox prefWidth="220" spacing="10" style="-fx-background-color: #f4f4f4; -fx-padding: 15; -fx-border-color: #ddd; -fx-border-width: 0 1 0 0;">
+      <Label style="-fx-font-weight: bold; -fx-font-size: 16px;" text="Мої папки" />
+      <ListView fx:id="categoryListView" VBox.vgrow="ALWAYS" />
+      <Button maxWidth="Infinity" onAction="#handleAddCategory" style="-fx-background-color: #e0e0e0;" text="+ Нова папка" />
+    </VBox>
+  </left>
+  <center>
+    <VBox spacing="15" style="-fx-padding: 15;">
+      <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label fx:id="currentCategoryLabel" style="-fx-font-weight: bold; -fx-font-size: 20px;" text="Оберіть папку зліва" />
+        <Region HBox.hgrow="ALWAYS" />
+        <!-- Нове поле для пошуку -->
+        <TextField fx:id="searchField" promptText="Пошук посилань..." prefWidth="200" />
+        <Button onAction="#handleAddLink" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;" text="+ Додати посилання" />
+        <Button onAction="#handleDeleteLink" style="-fx-background-color: #f44336; -fx-text-fill: white;" text="Видалити" />
+      </HBox>
+      <TableView fx:id="linksTable" VBox.vgrow="ALWAYS">
+        <columns>
+          <TableColumn fx:id="titleColumn" prefWidth="200" text="Назва закладки" />
+          <TableColumn fx:id="urlColumn" prefWidth="250" text="URL-адреса" />
+          <TableColumn fx:id="tagsColumn" prefWidth="200" text="Теги" />
+        </columns>
+        <columnResizePolicy>
+          <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+        </columnResizePolicy>
+      </TableView>
+    </VBox>
+  </center>
+</BorderPane>
+
+
+========================================================
+����: src\test\java\com\konxma\linkvault\repository\InfrastructureIntegrationTest.java
+========================================================
+package com.konxma.linkvault.repository;
+
+import com.konxma.linkvault.model.Category;
+import com.konxma.linkvault.model.User;
+import org.junit.jupiter.api.*;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class InfrastructureIntegrationTest {
+
+  private UserRepository userRepository;
+  private CategoryRepository categoryRepository;
+
+  // Унікальний ідентифікатор, щоб тестові дані не конфліктували з реальними
+  private static final String TEST_EMAIL_PREFIX = "test_integration_";
+  private String currentTestEmail;
+  private User testUser;
+
+  @BeforeEach
+  void setUp() {
+    userRepository = new UserRepository();
+    categoryRepository = new CategoryRepository();
+    currentTestEmail = TEST_EMAIL_PREFIX + UUID.randomUUID() + "@test.com";
+    userRepository.clearCache(); // Очищаємо IdentityMap перед кожним тестом
+  }
+
+  @AfterEach
+  void tearDown() {
+    // Очищення бази від тестових даних після виконання тесту
+    if (testUser != null && testUser.getUserId() > 0) {
+      try (Connection conn = DatabaseConnection.getInstance().getConnection();
+          PreparedStatement pstmt = conn.prepareStatement("DELETE FROM users WHERE email LIKE ?")) {
+        pstmt.setString(1, TEST_EMAIL_PREFIX + "%");
+        pstmt.executeUpdate();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  @Test
+  @Order(1)
+  @DisplayName("Тестування UserRepository: Збереження, Мапінг (EntityMapper) та Кешування (IdentityMap)")
+  void testUserRepositorySaveAndFind() {
+    User newUser = new User();
+    newUser.setUsername("TestUser");
+    newUser.setEmail(currentTestEmail);
+    newUser.setPasswordHash("hashed_password_123");
+
+    testUser = userRepository.save(newUser);
+
+    assertNotNull(testUser, "Користувач має бути збережений");
+    assertTrue(testUser.getUserId() > 0, "ID користувача має бути більше 0");
+
+    User foundByEmail = userRepository.findByEmail(currentTestEmail);
+    assertNotNull(foundByEmail, "Мапер має успішно зібрати об'єкт з ResultSet");
+    assertEquals("TestUser", foundByEmail.getUsername());
+
+    User foundById = userRepository.findById(testUser.getUserId());
+    assertNotNull(foundById, "Користувач має знаходитися за ID");
+    assertSame(foundByEmail, foundById, "IdentityMap має повертати той самий об'єкт з кешу пам'яті");
+  }
+
+  @Test
+  @Order(2)
+  @DisplayName("Тестування CategoryRepository: Зв'язок сутностей (Foreign Key)")
+  void testCategoryRepositorySave() {
+    User user = new User();
+    user.setUsername("CategoryOwner");
+    user.setEmail(currentTestEmail);
+    user.setPasswordHash("pass");
+    testUser = userRepository.save(user);
+
+    Category newCategory = new Category();
+    newCategory.setUserId(testUser.getUserId());
+    newCategory.setName("Тестова категорія");
+    newCategory.setDescription("Опис для інтеграційного тесту");
+
+    assertDoesNotThrow(() -> {
+      categoryRepository.save(newCategory);
+    }, "Збереження категорії не повинно викликати винятків SQL");
+  }
+}
+
+
+
+========================================================
+����: src\test\java\com\konxma\linkvault\service\UserServiceIntegrationTest.java
+========================================================
+package com.konxma.linkvault.service;
+
+import com.konxma.linkvault.model.User;
+import com.konxma.linkvault.repository.DatabaseConnection;
+import org.junit.jupiter.api.*;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class UserServiceIntegrationTest {
+
+  private static Connection h2Connection;
+  private MockedStatic<DatabaseConnection> mockedDbConnection;
+  private UserService userService;
+
+  @BeforeAll
+  static void setupDatabase() throws Exception {
+    // Піднімаємо H2 в пам'яті для тестів
+    h2Connection = DriverManager.getConnection("jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE", "sa", "");
+    try (Statement stmt = h2Connection.createStatement()) {
+      stmt.execute("CREATE TABLE users (user_id SERIAL PRIMARY KEY, username VARCHAR(50) NOT NULL, email VARCHAR(100) UNIQUE NOT NULL, password_hash TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+      stmt.execute("CREATE TABLE categories (category_id SERIAL PRIMARY KEY, user_id INTEGER, name VARCHAR(100) NOT NULL, description TEXT)");
+    }
+  }
+
+  @AfterAll
+  static void closeDatabase() throws Exception {
+    if (h2Connection != null) {
+      h2Connection.close();
+    }
+  }
+
+  @BeforeEach
+  void setUp() throws Exception {
+    // Створюємо "шпигуна" (spy) для нашого з'єднання
+    Connection spyConnection = Mockito.spy(h2Connection);
+    // Забороняємо фізично закривати з'єднання під час тесту (UnitOfWork спробує це зробити)
+    Mockito.doNothing().when(spyConnection).close();
+
+    // Підміняємо пул з'єднань
+    DatabaseConnection mockPool = Mockito.mock(DatabaseConnection.class);
+    Mockito.when(mockPool.getConnection()).thenReturn(spyConnection);
+    Mockito.doNothing().when(mockPool).releaseConnection(Mockito.any(Connection.class));
+
+    mockedDbConnection = Mockito.mockStatic(DatabaseConnection.class);
+    mockedDbConnection.when(DatabaseConnection::getInstance).thenReturn(mockPool);
+
+    userService = new UserService();
+  }
+
+  @AfterEach
+  void tearDown() throws Exception {
+    mockedDbConnection.close();
+    // Очищаємо таблиці після кожного тесту, щоб вони не впливали один на одного
+    try (Statement stmt = h2Connection.createStatement()) {
+      stmt.execute("TRUNCATE TABLE users");
+      stmt.execute("TRUNCATE TABLE categories");
+    }
+  }
+
+  @Test
+  void registerAndAuthenticateUser_IntegrationFlow() {
+    User newUser = new User();
+    newUser.setUsername("integration_user");
+    newUser.setEmail("int@test.com");
+
+    // 1. Перевіряємо, що реєстрація проходить без помилок
+    assertDoesNotThrow(() -> userService.registerNewUser(newUser, "secure123"),
+        "Користувач та базова категорія повинні успішно зберегтися в БД");
+
+    // 2. Перевіряємо авторизацію з правильним паролем
+    User loggedInUser = userService.authenticate("int@test.com", "secure123");
+    assertNotNull(loggedInUser, "Авторизація повинна пройти успішно");
+    assertEquals("integration_user", loggedInUser.getUsername());
+
+    // 3. Перевіряємо, що пароль у базі дійсно захешований
+    assertNotEquals("secure123", loggedInUser.getPasswordHash(), "Пароль у базі має бути захешований (не дорівнювати сирому тексту)!");
+  }
+
+  @Test
+  void authenticate_ShouldReturnNull_WhenPasswordIsWrong() {
+    User newUser = new User();
+    newUser.setUsername("wrong_pass_user");
+    newUser.setEmail("wrong@test.com");
+
+    // Реєструємо користувача
+    assertDoesNotThrow(() -> userService.registerNewUser(newUser, "correctPass"));
+
+    // Спроба входу з неправильним паролем
+    User loggedInUser = userService.authenticate("wrong@test.com", "invalidPass");
+
+    // Має повернутися null
+    assertNull(loggedInUser, "При введенні неправильного пароля авторизація має повертати null");
+  }
+}
+
+
+========================================================
+����: src\test\java\com\konxma\linkvault\service\UserServiceTest.java
+========================================================
+package com.konxma.linkvault.service;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class UserServiceTest {
+  private UserService userService;
+
+  @BeforeEach
+  void setUp() {
+    userService = new UserService();
+  }
+
+  @Test
+  void registerUser_ShouldThrowException_WhenUserIsNull() {
+    // Додано другий фіктивний аргумент "testPass", щоб метод скомпілювався
+    assertThrows(Exception.class, () -> userService.registerNewUser(null, "testPass"),
+        "Очікується помилка (Exception) при спробі передати порожній об'єкт у сервіс");
+  }
+}
+
+
+========================================================
+����: pom.xml
+========================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.konxma</groupId>
+  <artifactId>LinkVault</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <javafx.version>21.0.2</javafx.version>
+  </properties>
+
+  <dependencies>
+    <!-- JavaFX -->
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-controls</artifactId>
+      <version>${javafx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-fxml</artifactId>
+      <version>${javafx.version}</version>
+    </dependency>
+
+    <!-- PostgreSQL Database -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.3</version>
+    </dependency>
+
+    <!-- Flyway Database Migrations -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>10.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <version>10.10.0</version>
+    </dependency>
+
+    <!-- JSON Processing -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-toml</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.10.1</version>
+    </dependency>
+
+    <!-- Testing (JUnit 5, Mockito & H2) -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- ДОДАНО: Двигун для запуску тестів -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.11.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>5.11.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>2.2.224</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Плагін для компіляції -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <source>21</source>
+          <target>21</target>
+        </configuration>
+      </plugin>
+
+      <!-- ДОДАНО: Плагін для запуску тестів (вирішує проблему з Java 25 та Mockito) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+          <argLine>-Dnet.bytebuddy.experimental=true -XX:+EnableDynamicAgentLoading</argLine>
+        </configuration>
+      </plugin>
+
+      <!-- Плагін для JavaFX -->
+      <plugin>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-maven-plugin</artifactId>
+        <version>0.0.8</version>
+        <configuration>
+          <mainClass>com.konxma.linkvault.Launcher</mainClass>
+        </configuration>
+      </plugin>
+
+      <!-- SPOTLESS: Конфігурація для форматування коду -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.43.0</version>
+        <configuration>
+          <java>
+            <removeUnusedImports/>
+            <trimTrailingWhitespace/>
+            <endWithNewline/>
+            <indent>
+              <spaces>true</spaces>
+              <spacesPerTab>4</spacesPerTab>
+            </indent>
+          </java>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>apply</goal>
+            </goals>
+            <phase>compile</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+
+
