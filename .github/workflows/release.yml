@@ -1,0 +1,148 @@
+name: Release LinkVault Installers
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-installers:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install WiX Toolset (Windows only)
+        if: matrix.os == 'windows-latest'
+        run: choco install wixtoolset --yes
+
+      - name: Install RPM packaging tools (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm fakeroot
+
+      - name: Build Fat JAR
+        run: mvn clean package -DskipTests
+
+      - name: Prepare jpackage input
+        shell: bash
+        run: |
+          mkdir -p jpackage-input
+          cp target/LinkVault-fat.jar jpackage-input/
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Package installer (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          jpackage `
+            --type msi `
+            --name "LinkVault" `
+            --app-version "${{ steps.version.outputs.VERSION }}" `
+            --vendor "Konxma" `
+            --input jpackage-input/ `
+            --main-jar LinkVault-fat.jar `
+            --main-class com.konxma.linkvault.Launcher `
+            --icon packaging/windows/LinkVault.ico `
+            --dest dist/ `
+            --win-dir-chooser `
+            --win-menu `
+            --win-shortcut `
+            --win-menu-group "Konxma Dev"
+
+      - name: Package installer (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          jpackage \
+            --type dmg \
+            --name "LinkVault" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "Konxma" \
+            --input jpackage-input/ \
+            --main-jar LinkVault-fat.jar \
+            --main-class com.konxma.linkvault.Launcher \
+            --icon packaging/macos/LinkVault.icns \
+            --dest dist/
+
+      - name: Package installer (Linux DEB & RPM)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          jpackage \
+            --type deb \
+            --name "linkvault" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "Konxma" \
+            --input jpackage-input/ \
+            --main-jar LinkVault-fat.jar \
+            --main-class com.konxma.linkvault.Launcher \
+            --icon packaging/linux/LinkVault.png \
+            --dest dist/ \
+            --linux-shortcut
+          
+          jpackage \
+            --type rpm \
+            --name "linkvault" \
+            --app-version "${{ steps.version.outputs.VERSION }}" \
+            --vendor "Konxma" \
+            --input jpackage-input/ \
+            --main-jar LinkVault-fat.jar \
+            --main-class com.konxma.linkvault.Launcher \
+            --icon packaging/linux/LinkVault.png \
+            --dest dist/ \
+            --linux-shortcut
+
+          cp target/LinkVault-fat.jar dist/
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: dist/
+          retention-days: 1
+
+  publish-release:
+    needs: build-installers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: installers/
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "LinkVault Release ${{ github.ref_name }}"
+          body: |
+            ## Збірка ${{ github.ref_name }}
+            
+            | Операційна система | Інсталятор |
+            |---|---|
+            | Windows 10/11 | `.msi` |
+            | macOS | `.dmg` |
+            | Ubuntu/Debian | `.deb` |
+            | Fedora/RedHat | `.rpm` |
+            | Універсальний | `.jar` |
+          files: installers/**
+          draft: false
+          prerelease: false
