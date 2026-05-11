@@ -8,6 +8,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 public class LoginController {
@@ -25,8 +26,6 @@ public class LoginController {
     emailField.textProperty().bindBidirectional(viewModel.emailProperty());
     passwordField.textProperty().bindBidirectional(viewModel.passwordProperty());
     errorLabel.textProperty().bind(viewModel.errorMessageProperty());
-
-    // Зв'язуємо CheckBox
     rememberMeCheckBox.selectedProperty().bindBidirectional(viewModel.rememberMeProperty());
 
     loginButton.disableProperty().bind(viewModel.isLoadingProperty());
@@ -35,6 +34,9 @@ public class LoginController {
 
   @FXML
   private void handleLogin() {
+    // Робимо текст помилки червоним для кращої видимості
+    errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+
     viewModel.login().thenAccept(user -> Platform.runLater(() -> {
       if (user != null) {
         loadMainWindow(new UserDTO(user.getUserId(), user.getUsername(), user.getEmail()));
@@ -43,7 +45,10 @@ public class LoginController {
   }
 
   @FXML
-  private void handleRegister() { viewModel.register(); }
+  private void handleRegister() {
+    errorLabel.setStyle("-fx-text-fill: #00a8ff; -fx-font-weight: bold;"); // Синій для реєстрації
+    viewModel.register();
+  }
 
   private void loadMainWindow(UserDTO user) {
     try {
@@ -54,7 +59,15 @@ public class LoginController {
 
       Stage stage = (Stage) emailField.getScene().getWindow();
 
-      // ВСТАНОВЛЮЄМО ВЕЛИКИЙ РОЗМІР ВІКНА ОДРАЗУ
+      // ВСТАНОВЛЮЄМО ВЛАСНУ ІКОНКУ LINKVAULT
+      try {
+        Image appIcon = new Image(getClass().getResourceAsStream("/LinkVault.png"));
+        stage.getIcons().clear();
+        stage.getIcons().add(appIcon);
+      } catch (Exception e) {
+        System.out.println("Не вдалося знайти LinkVault.png у папці resources");
+      }
+
       stage.setScene(new Scene(root, 1100, 700));
       stage.setTitle("LinkVault - " + user.getUsername());
       stage.setResizable(true);
